@@ -1,42 +1,26 @@
 from bs4 import BeautifulSoup
-
-# 태그 카테고리
-tag_category = {
-    'body': 1,
-    'div': 2,
-    'p': 3,
-    'span': 4,
-    'img': 5,
-    'a': 6
-}
-
-# 클래스 카테고리
-class_category = {
-    'nac_inline_1': 10,
-    'nac_textbox_center': 11,
-    'pubtree_textbox': 12,
-    'nac_container': 13,
-    'nac_container_free': 14
-}
-
-# 스타일 카테고리
-style_category = {
-}
+from query import load_categories, insert_category, get_max_index
 
 # 카테고리 매핑 함수
 def get_category(tag):
+    global tag_category, class_category
     tag_name = tag.name
     category = tag_category.get(tag_name, 0)  # 태그에 따른 카테고리
+    if category == 0:
+        max_index = get_max_index('tag')
+        category = max_index + 1
+        insert_category('tag', tag_name, category)
+        tag_category, class_category = load_categories()
+
 
     if tag.has_attr('class'):
         for cls in tag['class']:
             category = max(category, class_category.get(cls, 0))  # 클래스에 따른 카테고리
-
-    if tag.has_attr('style'):
-        styles = tag['style'].split(';')
-        for style in styles:
-            if style.strip() in style_category:
-                category = max(category, style_category[style.strip()])  # 스타일에 따른 카테고리
+            if category == 0:
+                max_index = get_max_index('class')
+                category = max_index + 1
+                insert_category('class', cls, category)
+                tag_category, class_category = load_categories()
 
     return category
 
@@ -48,8 +32,11 @@ def print_category(tag, level=0):
         if hasattr(child, 'children'):
             print_category(child, level + 1)
 
+
+tag_category, class_category = load_categories()
+
 # 파일에서 XHTML 내용을 읽어옵니다.
-file_path = 'test.xhtml'
+file_path = 'test2.xhtml'
 with open(file_path, 'r', encoding='utf-8') as file:
     xhtml_content = file.read()
 
