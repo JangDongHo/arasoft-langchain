@@ -1,81 +1,59 @@
-from dotenv import load_dotenv
-from langchain_teddynote import logging
-from langchain_openai import ChatOpenAI
-from langchain.chains.openai_functions import create_structured_output_runnable
-from typing import List
-import re
+from bs4 import BeautifulSoup
 
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.pydantic_v1 import BaseModel, Field
-from lxml import etree
+# 태그 카테고리
+tag_category = {
+    'body': 1,
+    'div': 2,
+    'p': 3,
+    'span': 4,
+    'img': 5,
+    'a': 6
+}
 
-load_dotenv()
-logging.langsmith("아라소프트")
+# 클래스 카테고리
+class_category = {
+    'nac_inline_1': 10,
+    'nac_textbox_center': 11,
+    'pubtree_textbox': 12,
+    'nac_container': 13,
+    'nac_container_free': 14
+}
 
-def body_parser(tree):
-    # XHTML 네임스페이스를 정의합니다.
-    namespaces = {
-        'xhtml': 'http://www.w3.org/1999/xhtml'
-    }
+# 스타일 카테고리
+style_category = {
+}
 
-    # <body> 태그를 찾습니다.
-    body = tree.find('xhtml:body', namespaces)
+# 카테고리 매핑 함수
+def get_category(tag):
+    tag_name = tag.name
+    category = tag_category.get(tag_name, 0)  # 태그에 따른 카테고리
 
-    # <body> 태그의 내용을 출력합니다.
-    if body is not None:
-        # Pretty print로 포맷팅
-        return etree.tostring(body, encoding='unicode', method='html')
-    else:
-        return ""
+    if tag.has_attr('class'):
+        for cls in tag['class']:
+            category = max(category, class_category.get(cls, 0))  # 클래스에 따른 카테고리
 
-class Category(BaseModel):
-    """ HTML 코드를 정수형 카테고리로 변환합니다. """
+    if tag.has_attr('style'):
+        styles = tag['style'].split(';')
+        for style in styles:
+            if style.strip() in style_category:
+                category = max(category, style_category[style.strip()])  # 스타일에 따른 카테고리
 
-    answer: List[str] = Field(..., description="HTML 코드를 정수형 카테고리로 변환합니다.")
+    return category
 
-# test.xhtml 파일을 읽어와서 파싱합니다.
-tree = etree.parse('test.xhtml')
-body_content = body_parser(tree)
+# HTML 요소 순회 및 출력
+def print_category(tag, level=0):
+    category = get_category(tag)
+    print(' ' * level * 2 + str(category))
+    for child in tag.children:
+        if hasattr(child, 'children'):
+            print_category(child, level + 1)
 
-# 객체 생성
-llm = ChatOpenAI(
-    temperature=0,  # 창의성 (0.0 ~ 2.0)
-    model_name="gpt-4o-mini",  # 모델명
-)
+# 파일에서 XHTML 내용을 읽어옵니다.
+file_path = 'test.xhtml'
+with open(file_path, 'r', encoding='utf-8') as file:
+    xhtml_content = file.read()
 
-# Define the prompt
-prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            "당신은 전자책 HTML 코드를 정수형 카테고리로 변환하는 프로그램입니다.",
-        ),
-        (
-            "human",
-            """대부분의 전자책은 Tag와 Class를 사용하여 구조화되어 있습니다. 이 정보를 사용하여 카테고리로 변환할 수 있습니다.
-            예를 들어, <div class="nac_textbox_center">...</div> 는 1로 변환됩니다.
-            기존에 발견하지 못한 새로운 Tag나 Class가 있을 경우, 이를 추가할 수 있습니다. 
+soup = BeautifulSoup(xhtml_content, 'html.parser')
+body_content = soup.body
 
-            출력 예시:
-            1
-              2
-                3
-                3
-                3
-              4
-              5
-
-            body: {body}
-            """,
-        )
-    ]
-)
-
-chain = prompt | llm
-
-#response = chain.invoke({"body": body_content})
-
-print(body_content)
-
-# Print response
-#print(response)
+print_category(body_content)
