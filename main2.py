@@ -85,7 +85,7 @@ def category_tree_to_html(tree):
     return soup
 
 # 파일에서 XHTML 내용을 읽어옵니다.
-file_path = 'test.xhtml'
+file_path = 'dataset/test.xhtml'
 with open(file_path, 'r', encoding='utf-8') as file:
     xhtml_content = file.read()
 
@@ -93,8 +93,8 @@ soup = BeautifulSoup(xhtml_content, 'html.parser')
 body_content = soup.body
 
 category_tree = html_to_category_tree(body_content)
-#print(json.dumps(category_tree, indent=2, ensure_ascii=False))
+print(json.dumps(category_tree, indent=2, ensure_ascii=False))
 
 # HTML로 복원
 restored_html = category_tree_to_html(category_tree)
-print(restored_html.prettify())
+#print(restored_html.prettify())
