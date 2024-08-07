@@ -4,6 +4,7 @@ from langchain_core.output_parsers import StrOutputParser
 import streamlit as st
 from dotenv import load_dotenv
 load_dotenv()
+google_api_key = st.secrets['google_api_key']
 
 template = """
 당신은 전자책 pdf 원고를 보고 적절한 디자인을 가진 xhtml 파일로 만들어주는 프로그램입니다. 다음 원고를 보고 xhtml로 전자책 문서를 출력하세요.
