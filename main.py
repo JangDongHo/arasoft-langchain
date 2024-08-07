@@ -2,8 +2,10 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 import streamlit as st
+import os
 from dotenv import load_dotenv
 load_dotenv()
+api_key = os.getenv('GOOGLE_API_KEY') or st.secrets["google_api_key"]
 
 template = """
 당신은 전자책 pdf 원고를 보고 적절한 디자인을 가진 xhtml 파일로 만들어주는 프로그램입니다. 다음 원고를 보고 xhtml로 전자책 문서를 출력하세요.
@@ -31,7 +33,7 @@ def main():
               input = {"epub_script": epub_script}
               with st.spinner('변환 중...'):
                   # 언어모델 불러오기
-                  llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest")
+                  llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", google_api_key=api_key)
                   prompt = PromptTemplate.from_template(template)
                   output_parser = StrOutputParser()
                   chain = prompt | llm | output_parser
