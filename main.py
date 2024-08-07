@@ -76,6 +76,7 @@ def main():
                   output_parser = StrOutputParser()
                   chain = prompt | llm | output_parser
                   xhtml_output = chain.invoke(input)
+                  xhtml_output = xhtml_output.replace('```xhtml\n', '').replace('\n```', '')
               st.success("변환 완료!")
               st.code(xhtml_output, language='html')
               st.markdown(xhtml_output, unsafe_allow_html=True)
