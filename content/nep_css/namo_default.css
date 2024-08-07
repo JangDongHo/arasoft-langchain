@@ -1,0 +1,27 @@
+@import url(./pubtree_style.css);
+@import url(./pubtree_main.css);
+@import url(./pubtree_template.css);
+@import url(./namo_export_nav.css);
+
+@font-face { font-family: "KoPubWorld돋움체 Medium"; src: url(../nep_font/font_0000.ttf) format("truetype"); }
+@font-face { font-family: "국민연금체 Regular"; src: url(../nep_font/font_0001.ttf) format("truetype"); }
+@font-face { font-family: "KoPubWorld돋움체 Bold"; src: url(../nep_font/font_0002.ttf) format("truetype"); }
+@font-face { font-family: "G마켓 산스 Bold"; src: url(../nep_font/font_0003.otf) format("opentype"); }
+@font-face { font-family: "KoPubWorld돋움체 Light"; src: url(../nep_font/font_0004.ttf) format("truetype"); }
+@font-face { font-family: "KoPubWorld바탕체 Bold"; src: url(../nep_font/font_0005.ttf) format("truetype"); }
+@font-face { font-family: "G마켓 산스 Medium"; src: url(../nep_font/font_0006.otf) format("opentype"); }
+@font-face { font-family: "KoPub돋움체 Bold"; src: url(../nep_font/font_0007.ttf) format("truetype"); }
+@font-face { font-family: "KoPub돋움체 Light"; src: url(../nep_font/font_0008.ttf) format("truetype"); }
+@font-face { font-family: "ONE 모바일고딕 Title"; src: url(../nep_font/font_0009.ttf) format("truetype"); }
+@font-face { font-family: "Pretendard ExtraBold"; src: url(../nep_font/font_0010.ttf) format("truetype"); }
+@font-face { font-family: "던파 연단된 칼날 Bold"; src: url(../nep_font/font_0011.otf) format("opentype"); }
+@font-face { font-family: "KoPubWorld바탕체 Medium"; src: url(../nep_font/font_0012.ttf) format("truetype"); }
+@font-face { font-family: "바른공군체 Medium"; src: url(../nep_font/font_0013.ttf) format("truetype"); }
+@font-face { font-family: "KoPubWorld바탕체 Light"; src: url(../nep_font/font_0014.ttf) format("truetype"); }
+@font-face { font-family: "ONE 모바일POP"; src: url(../nep_font/font_0015.ttf) format("truetype"); }
+@font-face { font-family: "KoPub돋움체 Medium"; src: url(../nep_font/font_0016.ttf) format("truetype"); }
+@font-face { font-family: "Pretendard SemiBold"; src: url(../nep_font/font_0017.ttf) format("truetype"); }
+@font-face { font-family: "세방고딕 Bold"; src: url(../nep_font/font_0018.ttf) format("truetype"); }
+@font-face { font-family: "세방고딕 Regular"; src: url(../nep_font/font_0019.ttf) format("truetype"); }
+@font-face { font-family: "Pretendard Medium"; src: url(../nep_font/font_0020.ttf) format("truetype"); }
+@font-face { font-family: "교보 손글씨 2019"; src: url(../nep_font/font_0021.ttf) format("truetype"); }

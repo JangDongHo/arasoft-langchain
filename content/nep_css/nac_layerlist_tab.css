@@ -1,0 +1,122 @@
+﻿/* nac_layerlist_tab.css */
+
+.nac_layerlist_tab {
+    padding:5px;
+    overflow:hidden;
+    box-sizing:border-box;
+    -webkit-writing-mode:horizontal-tb !important;
+    writing-mode:horizontal-tb !important;
+    -webkit-column-break-inside:avoid;
+    page-break-inside:avoid;
+    break-inside: avoid;
+
+    display:flex;
+    flex-flow:column nowrap;
+    align-items:stretch;
+    justify-content:center;
+}
+
+.nac_layerlist_tab.nac_below {
+    flex-flow:column-reverse nowrap;
+}
+
+.nac_layerlist_tab * {
+    box-sizing:border-box;
+}
+
+.nac_layerlist_tab > .nac_thumb_container {
+    flex-shrink:0;
+    margin:0px;
+    padding:5px 0px 0px 0px;
+    position:relative;
+    overflow:hidden;
+
+    display:flex;
+    flex-flow:column wrap;
+    align-items:flex-start;
+    align-content:flex-start;
+    justify-content:flex-end;
+}
+
+.nac_layerlist_tab.nac_below > .nac_thumb_container {
+    padding:0px 0px 5px 0px;
+}
+
+.nac_layerlist_tab > .nac_thumb_container.nac_thin_scroll {
+    overflow-x:auto;
+}
+
+.nac_layerlist_tab > .nac_thumb_container.nac_thin_scroll::-webkit-scrollbar {
+	width:1px;
+    height:1px;
+}
+.nac_layerlist_tab > .nac_thumb_container.nac_thin_scroll::-webkit-scrollbar-track {
+	background:rgba(0,0,0,0.05);
+}
+.nac_layerlist_tab > .nac_thumb_container.nac_thin_scroll::-webkit-scrollbar-thumb {
+	background:rgba(0,0,0,0.5);
+}
+.nac_layerlist_tab > .nac_thumb_container.nac_thin_scroll::-webkit-scrollbar-button {
+    width:0px;
+    height:0px;
+}
+
+.nac_layerlist_tab > .nac_thumb_container > .nac_thumb {
+    flex-shrink:0;
+    margin:0px 3px 0px 0px;
+    padding:0px;
+    height:100%;
+    cursor:default;
+    overflow:hidden;
+
+    display:flex;
+    flex-flow:row wrap;
+    align-items:center;
+    align-content:center;
+}
+
+.nac_layerlist_tab:not(.nac_below) > .nac_thumb_container > .nac_thumb {
+    border-bottom:none !important;
+}
+
+.nac_layerlist_tab.nac_below > .nac_thumb_container > .nac_thumb {
+    border-top:none !important;
+}
+
+.nac_layerlist_tab > .nac_thumb_container > .nac_thumb > * {
+    flex:1 100%;
+    margin:0px;
+}
+
+.nac_layerlist_tab > .nac_content_container {
+    flex-grow:1;
+    position:relative;
+    overflow:hidden;
+
+    display:flex;
+    flex-flow:row nowrap;
+    align-items:stretch;
+    justify-content:center;
+}
+
+.nac_layerlist_tab > .nac_content_container > .nac_item {
+    flex-grow:1;
+    position:relative;
+}
+
+.nac_layerlist_tab .nac_content_container > .nac_item > div {
+    max-width:100%;
+    max-height:100%;
+}
+
+/* for background image on thumb */
+.nac_layerlist_tab > .nac_thumb_container > div.nac_for_scoped_ll.nac_thumb.nac_active[style*="background-image"] * {
+    background-color:transparent !important;
+}
+
+
+
+
+
+
+

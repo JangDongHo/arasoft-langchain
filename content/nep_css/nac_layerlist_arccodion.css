@@ -1,0 +1,112 @@
+﻿/* nac_layerlist_arccodion.css */
+
+.nac_layerlist_arccodion {
+    box-sizing:border-box;
+    -webkit-writing-mode:horizontal-tb !important;
+    writing-mode:horizontal-tb !important;
+    -webkit-column-break-inside:avoid;
+    page-break-inside:avoid;
+    break-inside: avoid;
+}
+
+.nac_layerlist_arccodion * {
+    box-sizing:border-box;
+}
+
+/* horizontal */
+.nac_layerlist_arccodion.nac_horz {
+    padding:5px;
+    overflow:hidden;
+
+    display:flex;
+    flex-flow:row nowrap;
+    align-items:stretch;
+    justify-content:center;
+}
+
+.nac_layerlist_arccodion.nac_horz > .nac_thumb:not(:first-of-type) {
+    margin:0px 0px 0px 5px;
+}
+
+.nac_layerlist_arccodion.nac_horz > .nac_thumb > .nac_thumb_title {
+    margin:0px;
+    padding:0px;
+    width:100%;
+    height:100%;
+    writing-mode:vertical-rl;
+    -webkit-writing-mode:vertical-rl;
+
+    display:flex;
+    flex-flow:row wrap;
+    align-items:center;
+    justify-content:flex-start;
+    align-content:center;
+}
+
+.nac_layerlist_arccodion.nac_horz > .nac_thumb > .nac_thumb_title > * {
+    flex:1 100%;
+    margin:0px;
+    padding:5px 0px;
+}
+
+/* vertical */
+.nac_layerlist_arccodion.nac_vert {
+    padding:5px;
+    overflow:hidden;
+
+    display:flex;
+    flex-flow:column nowrap;
+    align-items:stretch;
+    justify-content:center;
+}
+
+.nac_layerlist_arccodion.nac_vert > .nac_thumb:not(:first-of-type) {
+    margin:5px 0px 0px 0px;
+}
+
+.nac_layerlist_arccodion.nac_vert > .nac_thumb > .nac_thumb_title {
+    margin:0px;
+    padding:0px;
+    width:100%;
+    height:100%;
+
+    display:flex;
+    flex-flow:row wrap;
+    align-items:center;
+    justify-content:flex-start;
+    align-content:center;
+}
+
+.nac_layerlist_arccodion.nac_vert > .nac_thumb > .nac_thumb_title > * {
+    flex:1 100%;
+    margin:0px;
+    padding:0px 5px;
+}
+
+/* common */
+.nac_layerlist_arccodion > .nac_thumb {
+    flex-shrink:0;
+    overflow:hidden;
+    cursor:default;
+    position:relative;
+}
+
+.nac_layerlist_arccodion > .nac_item {
+    flex-grow:1;
+    position:relative;
+}
+
+.nac_layerlist_arccodion > .nac_item > div {
+    max-width:100%;
+    max-height:100%;
+}
+
+/* for animation */
+.nac_layerlist_arccodion > .nac_replacer_for_layer {
+    padding:0px !important;
+}
+
+/* for background image on thumb */
+.nac_layerlist_arccodion > div.nac_for_scoped_ll.nac_thumb.nac_active[style*="background-image"] * {
+    background-color:transparent !important;
+}

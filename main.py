@@ -5,18 +5,42 @@ import streamlit as st
 from dotenv import load_dotenv
 load_dotenv()
 
-template = """
-당신은 전자책 pdf 원고를 보고 적절한 디자인을 가진 xhtml 파일로 만들어주는 프로그램입니다. 다음 원고를 보고 xhtml로 전자책 문서를 출력하세요.
+agent1 = """
+당신은 전자책 pdf 원고를 보고 적절한 레이아웃을 가진 xhtml 파일로 만들어주는 프로그램입니다. 다음 원고를 보고 xhtml로 전자책 문서를 출력하세요.
+단, xhtml 파일은 다음과 같은 구조를 가지고 있어야 하고, 전자책의 내용을 생성하거나 수정하지 않아야 합니다.
 
-INPUT:
+[전자책 xhtml 구조]
+<?xml version="1.0" encoding="utf-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+  <title></title>
+  <meta http-equiv="default-style" content="application/xhtml+xml; charset=utf-8" />
+  <meta name="viewport" content="width=600, height=800" />
+  <link href="../nep_css/namo_default.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="../nep_js/jquery.min.js"></script>
+  <script type="text/javascript" src="../nep_js/na_editing.js"></script>
+  <script type="text/javascript" src="../nep_js/namo_default.js"></script>
+  <script type="text/javascript" src="../nep_js/pubtree_diagram_template.js"></script>
+  <script type="text/javascript" src="../nep_js/pubtree_animation_template.js"></script>
+</head>
+<body style="margin: 0px; padding: 10px; width: 580px; height: 780px;">
+</body>
+</html>
+
+[원고]
 {epub_script}
-
-OUTPUT:
-xhtml
 """
 
-example_script = """
-한국의 역사
+agent2 = """
+당신은 잘 짜여진 전자책 xhtml 파일을 보고 적절하게 디자인된 xhtml 파일로 변환해주는 프로그램입니다. 
+다음 xhtml 파일을 보고 <head> 태그 내에 전자책에 어울릴 만한 스타일시트와 스크립트를 추가하고, <body> 태그 내에 전자책 내용을 적절하게 다시 배치하세요.
+출력은 반드시 xhtml 파일이어야 합니다.
+
+[전자책 xhtml]
+{epub_xhtml}
+"""
+
+example_script = """한국의 역사
 
 1. 고대 한국
 
@@ -51,37 +75,46 @@ example_script = """
 한국의 전통 음식에는 김치, 불고기, 비빔밥 등이 있습니다. 김치는 발효된 채소로 만든 음식으로, 건강에 좋은 유산균이 많이 들어 있습니다. 불고기는 얇게 썬 고기를 양념에 재워 구운 음식이며, 비빔밥은 여러 가지 나물과 고기를 밥 위에 올리고 고추장과 함께 비벼 먹는 음식입니다.
 
 현대 문화
-한국은 K-팝, 드라마, 영화 등 현대 문화에서도 큰 영향력을 발휘하고 있습니다. BTS, 블랙핑크와 같은 K-팝 그룹은 전 세계적으로 많은 팬을 보유하고 있으며, 한국 드라마와 영화는 글로벌 시장에서 큰 인기를 얻고 있습니다.
-"""
+한국은 K-팝, 드라마, 영화 등 현대 문화에서도 큰 영향력을 발휘하고 있습니다. BTS, 블랙핑크와 같은 K-팝 그룹은 전 세계적으로 많은 팬을 보유하고 있으며, 한국 드라마와 영화는 글로벌 시장에서 큰 인기를 얻고 있습니다."""
 
 
 def main():
-  st.header("아라소프트 전자책 AI")
+    pages = []
+    with st.sidebar:
+        choice = st.sidebar.selectbox('생성된 페이지', pages)
+        st.header("전자책 원고 입력")
+        epub_script = st.text_area("원고", value=example_script, height=500, label_visibility="collapsed")
+        st.subheader("LLM 모델")
+        st.sidebar.checkbox("Gemini-1.5-pro-latest", value=True)
+        button = st.button("변환")
 
-  menu = ['PDF To Epub']
-  choice = st.sidebar.selectbox('메뉴', menu)
-
-  if choice == 'PDF To Epub':
-      st.subheader("전자책 원고 입력")
-      
-      epub_script = st.text_area("원고를 여기에 입력하세요", value=example_script, height=300)
-      
-      if st.button("변환"):
-          if epub_script:
-              input = {"epub_script": epub_script}
-              with st.spinner('변환 중...'):
-                  # 언어모델 불러오기
-                  llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest")
-                  prompt = PromptTemplate.from_template(template)
-                  output_parser = StrOutputParser()
-                  chain = prompt | llm | output_parser
-                  xhtml_output = chain.invoke(input)
-                  xhtml_output = xhtml_output.replace('```xhtml\n', '').replace('\n```', '')
-              st.success("변환 완료!")
-              st.code(xhtml_output, language='html')
-              st.markdown(xhtml_output, unsafe_allow_html=True)
-          else:
-              st.warning("원고를 입력하세요.")
+    if button:
+        if epub_script:
+            input = {"epub_script": epub_script}
+            with st.spinner('1. 적절한 레이아웃으로 변환 중...'):
+                # 언어모델 불러오기
+                llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0.5)
+                prompt = PromptTemplate.from_template(agent1)
+                output_parser = StrOutputParser()
+                chain = prompt | llm | output_parser
+                output1 = chain.invoke(input)
+                output1 = output1.replace('```xhtml\n', '').replace('\n```', '')
+            with st.spinner('2. 전자책에 맞게 디자인 중...'):
+                input = {"epub_xhtml": output1}
+                prompt = PromptTemplate.from_template(agent2)
+                chain = prompt | llm | output_parser
+                output2 = chain.invoke(input)
+                output2 = output2.replace('```xhtml\n', '').replace('\n```', '')
+            st.markdown(output2, unsafe_allow_html=True, help="xhtml 코드")
+            st.code(output1, language='html')
+            st.code(output2, language='html')
+        else:
+            st.warning("원고를 입력하세요.")
+    else:
+        st.info("아라소프트 전자책 레이아웃 생성 서비스입니다. 왼쪽 사이드바에서 원고를 입력하고 변환 버튼을 눌러주세요.")
+    
+        
+        
 
 if __name__ == "__main__":
     main()
