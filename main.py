@@ -2,9 +2,16 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 import streamlit as st
+import os
 from dotenv import load_dotenv
 load_dotenv()
-google_api_key = st.secrets['google_api_key']
+
+api_key = os.getenv('GOOGLE_API_KEY') or st.secrets["google_api_key"]
+
+if not api_key:
+    st.error("API key is missing. Please check your secrets configuration.")
+else:
+    st.write("API key successfully retrieved.")
 
 template = """
 당신은 전자책 pdf 원고를 보고 적절한 디자인을 가진 xhtml 파일로 만들어주는 프로그램입니다. 다음 원고를 보고 xhtml로 전자책 문서를 출력하세요.
