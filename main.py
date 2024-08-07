@@ -6,7 +6,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-api_key = os.getenv('GOOGLE_API_KEY') or st.secrets["google_api_key"]
+api_key = os.getenv('GOOGLE_API_KEY') or st.secrets["google"]["api_key"]
 
 if not api_key:
     st.error("API key is missing. Please check your secrets configuration.")
