@@ -78,6 +78,7 @@ def main():
                   xhtml_output = chain.invoke(input)
               st.success("변환 완료!")
               st.code(xhtml_output, language='html')
+              st.markdown(xhtml_output, unsafe_allow_html=True)
           else:
               st.warning("원고를 입력하세요.")
 
