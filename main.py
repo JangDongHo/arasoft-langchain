@@ -1,46 +1,45 @@
-from bs4 import BeautifulSoup
-from query import load_categories, insert_category, get_max_index
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+import streamlit as st
+from dotenv import load_dotenv
+load_dotenv()
 
-# 카테고리 매핑 함수
-def get_category(tag):
-    global tag_category, class_category
-    tag_name = tag.name
-    category = tag_category.get(tag_name, 0)  # 태그에 따른 카테고리
-    if category == 0:
-        max_index = get_max_index('tag')
-        category = max_index + 1
-        insert_category('tag', tag_name, category)
-        tag_category, class_category = load_categories()
+template = """
+당신은 전자책 pdf 원고를 보고 적절한 디자인을 가진 xhtml 파일로 만들어주는 프로그램입니다. 다음 원고를 보고 xhtml로 전자책 문서를 출력하세요.
 
+INPUT:
+{epub_script}
 
-    if tag.has_attr('class'):
-        for cls in tag['class']:
-            category = max(category, class_category.get(cls, 0))  # 클래스에 따른 카테고리
-            if category == 0:
-                max_index = get_max_index('class')
-                category = max_index + 1
-                insert_category('class', cls, category)
-                tag_category, class_category = load_categories()
+OUTPUT:
+xhtml
+"""
 
-    return category
+def main():
+  st.header("아라소프트 전자책 AI")
 
-# HTML 요소 순회 및 출력
-def print_category(tag, level=0):
-    category = get_category(tag)
-    print(' ' * level * 2 + str(category))
-    for child in tag.children:
-        if hasattr(child, 'children'):
-            print_category(child, level + 1)
+  menu = ['PDF To Epub']
+  choice = st.sidebar.selectbox('메뉴', menu)
 
+  if choice == 'PDF To Epub':
+      st.subheader("전자책 원고 입력")
+      
+      epub_script = st.text_area("원고를 여기에 입력하세요", height=300)
+      
+      if st.button("변환"):
+          if epub_script:
+              input = {"epub_script": epub_script}
+              with st.spinner('변환 중...'):
+                  # 언어모델 불러오기
+                  llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest")
+                  prompt = PromptTemplate.from_template(template)
+                  output_parser = StrOutputParser()
+                  chain = prompt | llm | output_parser
+                  xhtml_output = chain.invoke(input)
+              st.success("변환 완료!")
+              st.code(xhtml_output, language='html')
+          else:
+              st.warning("원고를 입력하세요.")
 
-tag_category, class_category = load_categories()
-
-# 파일에서 XHTML 내용을 읽어옵니다.
-file_path = 'test2.xhtml'
-with open(file_path, 'r', encoding='utf-8') as file:
-    xhtml_content = file.read()
-
-soup = BeautifulSoup(xhtml_content, 'html.parser')
-body_content = soup.body
-
-print_category(body_content)
+if __name__ == "__main__":
+    main()
