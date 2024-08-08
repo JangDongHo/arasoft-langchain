@@ -38,7 +38,6 @@ Format:
     {head}
     <body style="margin: 0px; padding: 10px; width: 580px; height: 780px;">
     </body>
-    </html>
 
 Parameters:
     - epub_script: The script for the e-pub book. (default page size: 580px x 780px)
