@@ -29,7 +29,6 @@ head = """
 """
 
 agent1 = """
-
 For the given e-pub script, generate the xhtml layout using the given widgets.
 You must refer to the following e-book format and output only the appropriate body value.
 Content included in the e-book must never be created or modified.
