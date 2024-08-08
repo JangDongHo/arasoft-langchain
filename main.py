@@ -1,43 +1,54 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_community.llms import Ollama
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from langchain_community.document_loaders import TextLoader
 import streamlit as st
 from dotenv import load_dotenv
 load_dotenv()
 
-agent1 = """
-당신은 전자책 pdf 원고를 보고 적절한 레이아웃을 가진 xhtml 파일로 만들어주는 프로그램입니다. 다음 원고를 보고 xhtml로 전자책 문서를 출력하세요.
-단, xhtml 파일은 다음과 같은 구조를 가지고 있어야 하고, 전자책의 내용을 생성하거나 수정하지 않아야 합니다.
+# 위젯 db 열기
+loader = TextLoader("dataset/epub_widgets.txt")
+docs = loader.load()
 
-[전자책 xhtml 구조]
+head = """
 <?xml version="1.0" encoding="utf-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
 <head>
-  <title></title>
-  <meta http-equiv="default-style" content="application/xhtml+xml; charset=utf-8" />
-  <meta name="viewport" content="width=600, height=800" />
-  <link href="../nep_css/namo_default.css" rel="stylesheet" type="text/css" />
-  <script type="text/javascript" src="../nep_js/jquery.min.js"></script>
-  <script type="text/javascript" src="../nep_js/na_editing.js"></script>
-  <script type="text/javascript" src="../nep_js/namo_default.js"></script>
-  <script type="text/javascript" src="../nep_js/pubtree_diagram_template.js"></script>
-  <script type="text/javascript" src="../nep_js/pubtree_animation_template.js"></script>
+<title></title>
+<meta http-equiv="default-style" content="application/xhtml+xml; charset=utf-8" />
+<meta name="viewport" content="width=600, height=800" />
+<link href="./content/nep_css/namo_default.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="./content/nep_js/jquery.min.js"></script>
+<script type="text/javascript" src="./content/nep_js/na_editing.js"></script>
+<script type="text/javascript" src="./content/nep_js/namo_default.js"></script>
+<script type="text/javascript" src="./content/nep_js/pubtree_diagram_template.js"></script>
+<script type="text/javascript" src="./content/nep_js/pubtree_animation_template.js"></script>
 </head>
-<body style="margin: 0px; padding: 10px; width: 580px; height: 780px;">
-</body>
-</html>
-
-[원고]
-{epub_script}
 """
 
-agent2 = """
-당신은 잘 짜여진 전자책 xhtml 파일을 보고 적절하게 디자인된 xhtml 파일로 변환해주는 프로그램입니다. 
-다음 xhtml 파일을 보고 <head> 태그 내에 전자책에 어울릴 만한 스타일시트와 스크립트를 추가하고, <body> 태그 내에 전자책 내용을 적절하게 다시 배치하세요.
-출력은 반드시 xhtml 파일이어야 합니다.
+agent1 = """
 
-[전자책 xhtml]
-{epub_xhtml}
+For the given e-pub script, generate the xhtml layout using the given widgets.
+You must refer to the following e-book format and output only the appropriate body value.
+
+Format:
+    {head}
+    <body style="margin: 0px; padding: 10px; width: 580px; height: 780px;">
+    </body>
+    </html>
+
+Parameters:
+    - epub_script: The script for the e-pub book.
+
+Returns:
+    - epub_xhtml: The xhtml layout for the e-pub book.
+
+Epub_script:
+    {epub_script}
+
+Epub_widgets:
+    {epub_widgets}
 """
 
 example_script = """한국의 역사
@@ -83,31 +94,30 @@ def main():
     with st.sidebar:
         choice = st.sidebar.selectbox('생성된 페이지', pages)
         st.header("전자책 원고 입력")
-        epub_script = st.text_area("원고", value=example_script, height=500, label_visibility="collapsed")
-        st.subheader("LLM 모델")
-        st.sidebar.checkbox("Gemini-1.5-pro-latest", value=True)
+        epub_script = st.text_area("원고", value=example_script[:510], height=500, label_visibility="collapsed")
+        st.subheader("LLM 모델 선택")
+        models = ["gemma2", "Gemini-1.5-pro-latest"]
+        select_model = st.sidebar.selectbox("", models, index=1, label_visibility="collapsed")
         button = st.button("변환")
 
     if button:
         if epub_script:
-            input = {"epub_script": epub_script}
+            input = {"head": head, "epub_script": epub_script, "epub_widgets": docs}
             with st.spinner('1. 적절한 레이아웃으로 변환 중...'):
                 # 언어모델 불러오기
-                llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0.5)
+                if select_model == "gemma2":
+                    llm = Ollama(model="gemma2")
+                elif select_model == "Gemini-1.5-pro-latest":
+                    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0)
                 prompt = PromptTemplate.from_template(agent1)
                 output_parser = StrOutputParser()
                 chain = prompt | llm | output_parser
                 output1 = chain.invoke(input)
-                output1 = output1.replace('```xhtml\n', '').replace('\n```', '')
-            with st.spinner('2. 전자책에 맞게 디자인 중...'):
-                input = {"epub_xhtml": output1}
-                prompt = PromptTemplate.from_template(agent2)
-                chain = prompt | llm | output_parser
-                output2 = chain.invoke(input)
-                output2 = output2.replace('```xhtml\n', '').replace('\n```', '')
-            st.markdown(output2, unsafe_allow_html=True, help="xhtml 코드")
-            st.code(output1, language='html')
-            st.code(output2, language='html')
+                output1 = output1.replace("```html", " ").replace("```xhtml", " ").replace("```", " ")
+                output1 = head + output1 + "</body></html>"
+            st.markdown(output1, unsafe_allow_html=True)
+            with st.expander("전체 코드 보기"):
+                st.code(output1, language='html')
         else:
             st.warning("원고를 입력하세요.")
     else:
