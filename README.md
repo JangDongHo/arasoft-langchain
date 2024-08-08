@@ -2,6 +2,8 @@
 
 이 프로젝트는 아라소프트 산학협력과제 랭체인을(를) 위한 Python 애플리케이션입니다. 이 가이드에서는 개발 환경 설정 방법, 필요한 패키지 설치 방법, 애플리케이션 실행 방법을 설명합니다.
 
+[☁️ 클라우드 환경](https://arasoft-langchain.streamlit.app/)
+
 ## 요구 사항
 
 - Python 3.10.12
@@ -56,3 +58,5 @@ Streamlit을 사용하여 애플리케이션을 실행합니다.
 ```
 streamlit run main.py
 ```
+
+[⚙️ 로컬 환경](http://localhost:8501/)
