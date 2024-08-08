@@ -97,7 +97,7 @@ def main():
         st.header("전자책 원고 입력")
         epub_script = st.text_area("원고", value=example_script[:510], height=500, label_visibility="collapsed")
         st.subheader("LLM 모델 선택")
-        models = ["GPT-4o mini", "mistral", "Gemini-1.5-pro-latest"]
+        models = ["GPT-4o mini(유료)", "Gemini-1.5-pro-latest(무료)"]
         select_model = st.sidebar.selectbox("", models, index=0, label_visibility="collapsed")
         button = st.button("변환")
 
@@ -106,11 +106,9 @@ def main():
             input = {"head": head, "epub_script": epub_script, "epub_widgets": docs}
             with st.spinner('1. 적절한 레이아웃으로 변환 중...'):
                 # 언어모델 불러오기
-                if select_model == "mistral":
-                    llm = Ollama(model="mistral")
-                elif select_model == "Gemini-1.5-pro-latest":
+                if select_model == "Gemini-1.5-pro-latest(무료)":
                     llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0)
-                elif select_model == "GPT-4o mini":
+                elif select_model == "GPT-4o mini(유료)":
                     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
                 prompt = PromptTemplate.from_template(agent1)
                 output_parser = StrOutputParser()
