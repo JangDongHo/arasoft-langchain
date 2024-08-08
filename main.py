@@ -1,5 +1,6 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.llms import Ollama
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_community.document_loaders import TextLoader
@@ -31,6 +32,7 @@ agent1 = """
 
 For the given e-pub script, generate the xhtml layout using the given widgets.
 You must refer to the following e-book format and output only the appropriate body value.
+Content included in the e-book must never be created or modified.
 
 Format:
     {head}
@@ -39,10 +41,10 @@ Format:
     </html>
 
 Parameters:
-    - epub_script: The script for the e-pub book.
+    - epub_script: The script for the e-pub book. (default page size: 580px x 780px)
 
 Returns:
-    - epub_xhtml: The xhtml layout for the e-pub book.
+    - epub_xhtml: The xhtml layout for the e-pub book. (only the body value)
 
 Epub_script:
     {epub_script}
@@ -96,8 +98,8 @@ def main():
         st.header("전자책 원고 입력")
         epub_script = st.text_area("원고", value=example_script[:510], height=500, label_visibility="collapsed")
         st.subheader("LLM 모델 선택")
-        models = ["gemma2", "Gemini-1.5-pro-latest"]
-        select_model = st.sidebar.selectbox("", models, index=1, label_visibility="collapsed")
+        models = ["GPT-4o mini", "mistral", "Gemini-1.5-pro-latest"]
+        select_model = st.sidebar.selectbox("", models, index=0, label_visibility="collapsed")
         button = st.button("변환")
 
     if button:
@@ -105,19 +107,22 @@ def main():
             input = {"head": head, "epub_script": epub_script, "epub_widgets": docs}
             with st.spinner('1. 적절한 레이아웃으로 변환 중...'):
                 # 언어모델 불러오기
-                if select_model == "gemma2":
-                    llm = Ollama(model="gemma2")
+                if select_model == "mistral":
+                    llm = Ollama(model="mistral")
                 elif select_model == "Gemini-1.5-pro-latest":
                     llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0)
+                elif select_model == "GPT-4o mini":
+                    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
                 prompt = PromptTemplate.from_template(agent1)
                 output_parser = StrOutputParser()
                 chain = prompt | llm | output_parser
                 output1 = chain.invoke(input)
-                output1 = output1.replace("```html", " ").replace("```xhtml", " ").replace("```", " ")
-                output1 = head + output1 + "</body></html>"
-            st.markdown(output1, unsafe_allow_html=True)
-            with st.expander("전체 코드 보기"):
+                output1 = output1.replace("```html", "").replace("```xhtml","").replace("```xml","").replace("```","")
+                output1 = f"{head}{output1}</html>"
+            with st.expander("전체 코드"):
                 st.code(output1, language='html')
+            st.write(output1, unsafe_allow_html=True)
+                
         else:
             st.warning("원고를 입력하세요.")
     else:
