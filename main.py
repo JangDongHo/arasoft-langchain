@@ -4,6 +4,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_community.document_loaders import TextLoader
+from lxml import etree
 import streamlit as st
 from dotenv import load_dotenv
 load_dotenv()
@@ -40,6 +41,7 @@ Format:
 
 Parameters:
     - epub_script: The script for the e-pub book. (default page size: 580px x 780px)
+    - style_guide: The style guide for the e-pub book.
 
 Returns:
     - epub_xhtml: The xhtml layout for the e-pub book. (only the body value)
@@ -49,6 +51,9 @@ Epub_script:
 
 Epub_widgets:
     {epub_widgets}
+
+Style_guide:
+    {style_guide}
 """
 
 example_script = """한국의 역사
@@ -88,13 +93,26 @@ example_script = """한국의 역사
 현대 문화
 한국은 K-팝, 드라마, 영화 등 현대 문화에서도 큰 영향력을 발휘하고 있습니다. BTS, 블랙핑크와 같은 K-팝 그룹은 전 세계적으로 많은 팬을 보유하고 있으며, 한국 드라마와 영화는 글로벌 시장에서 큰 인기를 얻고 있습니다."""
 
+def validate_xhtml(xhtml_content: str) -> bool:
+    try:
+        # XHTML 파서 생성
+        parser = etree.XMLParser(dtd_validation=True)
+        
+        # XHTML 문서 파싱 및 무결성 검사
+        etree.fromstring(xhtml_content, parser)
+        
+        return True
+    except etree.XMLSyntaxError as e:
+        return False
 
 def main():
     pages = []
     with st.sidebar:
         choice = st.sidebar.selectbox('생성된 페이지', pages)
-        st.header("전자책 원고 입력")
+        st.subheader("전자책 원고 입력")
         epub_script = st.text_area("원고", value=example_script[:510], height=500, label_visibility="collapsed")
+        st.subheader("스타일 가이드")
+        style_guide = st.text_area("스타일 가이드", value="", height=100, label_visibility="collapsed")
         st.subheader("LLM 모델 선택")
         models = ["GPT-4o mini(유료)", "Gemini-1.5-pro-latest(무료)"]
         select_model = st.sidebar.selectbox("", models, index=0, label_visibility="collapsed")
@@ -102,7 +120,7 @@ def main():
 
     if button:
         if epub_script:
-            input = {"head": head, "epub_script": epub_script, "epub_widgets": docs}
+            input = {"head": head, "epub_script": epub_script, "epub_widgets": docs, "style_guide": style_guide}
             with st.spinner('1. 적절한 레이아웃으로 변환 중...'):
                 # 언어모델 불러오기
                 if select_model == "Gemini-1.5-pro-latest(무료)":
@@ -112,12 +130,14 @@ def main():
                 prompt = PromptTemplate.from_template(agent1)
                 output_parser = StrOutputParser()
                 chain = prompt | llm | output_parser
-                output1 = chain.invoke(input)
-                output1 = output1.replace("```html", "").replace("```xhtml","").replace("```xml","").replace("```","")
-                output1 = f"{head}{output1}</html>"
+                output = chain.invoke(input)
+                output = output.replace("```html", "").replace("```xhtml","").replace("```xml","").replace("```","")
+                output = f"{head}{output}</html>"
+            with st.expander("사용된 프롬프트"):
+                st.write(chain)
             with st.expander("전체 코드"):
-                st.code(output1, language='html')
-            st.write(output1, unsafe_allow_html=True)
+                st.code(output, language='html')
+            st.write(output, unsafe_allow_html=True)
                 
         else:
             st.warning("원고를 입력하세요.")
