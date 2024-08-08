@@ -46,9 +46,8 @@ touch .env
 .env 파일 예시:
 
 ```
-API_KEY=your_api_key_here
-DATABASE_URL=your_database_url_here
-SECRET_KEY=your_secret_key_here
+OPENAI_API_KEY=your_api_key_here
+GOOGLE_API_KEY=your_api_key_here
 ```
 
 ## 5. 애플리케이션 실행
