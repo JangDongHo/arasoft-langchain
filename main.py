@@ -1,9 +1,10 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_community.llms import Ollama
 from langchain_openai import ChatOpenAI
+from langchain_text_splitters import CharacterTextSplitter
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_community.document_loaders import TextLoader
+from langchain import LLMChain
 from lxml import etree
 import streamlit as st
 from dotenv import load_dotenv
@@ -29,10 +30,11 @@ head = """
 </head>
 """
 
-agent1 = """
+layout_prompt = """
 For the given e-pub script, generate the xhtml layout using the given widgets.
+The size of individual widget elements should be arranged to match the basic size of the page (580px*780px).
 You must refer to the following e-book format and output only the appropriate body value.
-Content included in the e-book must never be created or modified.
+Content included in the e-book must never be created or modified and do not use <br> tag.
 
 Format:
     {head}
@@ -40,7 +42,7 @@ Format:
     </body>
 
 Parameters:
-    - epub_script: The script for the e-pub book. (default page size: 580px x 780px)
+    - epub_script: The script for the e-pub book.
     - style_guide: The style guide for the e-pub book.
 
 Returns:
@@ -105,12 +107,18 @@ def validate_xhtml(xhtml_content: str) -> bool:
     except etree.XMLSyntaxError as e:
         return False
 
+def select_llm_model(model_name: str):
+    if model_name == "Gemini-1.5-pro-latest(무료)":
+        return ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0)
+    elif model_name == "GPT-4o mini(유료)":
+        return ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
 def main():
     pages = []
     with st.sidebar:
         choice = st.sidebar.selectbox('생성된 페이지', pages)
         st.subheader("전자책 원고 입력")
-        epub_script = st.text_area("원고", value=example_script[:510], height=500, label_visibility="collapsed")
+        epub_script = st.text_area("원고", value=example_script, height=500, label_visibility="collapsed")
         st.subheader("스타일 가이드")
         style_guide = st.text_area("스타일 가이드", value="", height=100, label_visibility="collapsed")
         st.subheader("LLM 모델 선택")
@@ -121,23 +129,37 @@ def main():
     if button:
         if epub_script:
             input = {"head": head, "epub_script": epub_script, "epub_widgets": docs, "style_guide": style_guide}
-            with st.spinner('1. 적절한 레이아웃으로 변환 중...'):
-                # 언어모델 불러오기
-                if select_model == "Gemini-1.5-pro-latest(무료)":
-                    llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0)
-                elif select_model == "GPT-4o mini(유료)":
-                    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-                prompt = PromptTemplate.from_template(agent1)
-                output_parser = StrOutputParser()
-                chain = prompt | llm | output_parser
-                output = chain.invoke(input)
-                output = output.replace("```html", "").replace("```xhtml","").replace("```xml","").replace("```","")
-                output = f"{head}{output}</html>"
+            # 1. 문서 구조 분석 및 변환
+            with st.spinner('1. 문서 구조 분석 및 변환 중...'):
+                text_splitter = CharacterTextSplitter(
+                    separator="\n",
+                    chunk_size=1000,
+                    chunk_overlap=100,
+                    length_function = len,
+                )
+                sections = text_splitter.split_text(epub_script)
+            with st.spinner("2. 레이아웃 배치..."):
+                llm = select_llm_model(select_model)
+                prompt = PromptTemplate.from_template(layout_prompt)
+                chain = LLMChain(llm=llm,prompt=prompt,output_parser=StrOutputParser())
+                results = [chain.run({
+                    "head": head,
+                    "epub_script": section,
+                    "epub_widgets": docs,
+                    "style_guide": style_guide
+                }) for section in sections]
             with st.expander("사용된 프롬프트"):
                 st.write(chain)
-            with st.expander("전체 코드"):
-                st.code(output, language='html')
-            st.write(output, unsafe_allow_html=True)
+            for (i, body) in enumerate(results):
+                output_xhtml = f"""
+                {head}
+                <body style="margin: 0px; padding: 10px; width: 580px; height: 780px;">
+                {body}
+                </body>
+                </html>
+                """.replace('\n', '').replace("```html", "").replace("```xhtml","").replace("```xml","").replace("```","")
+                with st.expander(f"페이지 {i+1}"):
+                    st.code(output_xhtml, language='html')
                 
         else:
             st.warning("원고를 입력하세요.")
