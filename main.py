@@ -21,12 +21,12 @@ head = """
 <title></title>
 <meta http-equiv="default-style" content="application/xhtml+xml; charset=utf-8" />
 <meta name="viewport" content="width=600, height=800" />
-<link href="./content/nep_css/namo_default.css" rel="stylesheet" type="text/css" />
-<script type="text/javascript" src="./content/nep_js/jquery.min.js"></script>
-<script type="text/javascript" src="./content/nep_js/na_editing.js"></script>
-<script type="text/javascript" src="./content/nep_js/namo_default.js"></script>
-<script type="text/javascript" src="./content/nep_js/pubtree_diagram_template.js"></script>
-<script type="text/javascript" src="./content/nep_js/pubtree_animation_template.js"></script>
+<link href="./nep_css/namo_default.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="./nep_js/jquery.min.js"></script>
+<script type="text/javascript" src="./nep_js/na_editing.js"></script>
+<script type="text/javascript" src="./nep_js/namo_default.js"></script>
+<script type="text/javascript" src="./nep_js/pubtree_diagram_template.js"></script>
+<script type="text/javascript" src="./nep_js/pubtree_animation_template.js"></script>
 </head>
 """
 
@@ -157,7 +157,7 @@ def main():
                 {body}
                 </body>
                 </html>
-                """.replace('\n', '').replace("```html", "").replace("```xhtml","").replace("```xml","").replace("```","")
+                """.replace('\n', '').replace('\n', '').replace("```html", "").replace("```xhtml","").replace("```xml","").replace("```","")
                 with st.expander(f"페이지 {i+1}"):
                     st.code(output_xhtml, language='html')
                 
