@@ -92,3 +92,111 @@
 ```html
 <div class="nac_layerlist nac_layerlist_slider nac_vert" data-alias="bdimg" style="padding: 5px; width: 400px; height: 300px; position: absolute; left: 100px; top: 250px; z-index: 2;" data-setter="layerlist/slider/setter.xhtml" data-resource="layerlist/slider/res/" data-help="1"> <div class="nac_content_part nac_hidden"> <div class="nac_content_container nac_only_select" style="padding:10px;" data-remove="false" data-alias="bdimg"> <div class="nac_item nac_replacer_for_layer nac_only_select nac_active" data-remove="false" data-alias="replacer"> <p>위젯 템플릿을 삽입하십시오</p> </div> <div class="nac_item nac_replacer_for_layer nac_only_select nac_display_none" data-remove="false" data-alias="replacer"> <p>위젯 템플릿을 삽입하십시오</p> </div> <div class="nac_item nac_replacer_for_layer nac_only_select nac_display_none" data-remove="false" data-alias="replacer"> <p>위젯 템플릿을 삽입하십시오</p> </div> <div class="nac_item nac_replacer_for_layer nac_only_select nac_display_none" data-remove="false" data-alias="replacer"> <p>위젯 템플릿을 삽입하십시오</p> </div> </div> </div> <div class="nac_navigate_part nac_below nac_only_resize pubtree_resize_only_y" style="height:50px;" data-remove="false" data-alias="bdimg"> <div class="nac_button_container nac_prev nac_vert nac_enabled nac_hidden"> <div class="nac_ll_button nac_hidden" style="width:20px; height:20px;"> <span class="nac_prev_normal" style="position: absolute; background-image: url(./nep_image/nac_ll_prev.png);"> </span> <span class="nac_prev_hover nac_hover" style="position: absolute; background-image: url(./nep_image/nac_ll_prev_hover.png);"> </span> </div> </div> <div class="nac_indicator nac_only_resize" data-remove="false" style="width:100px; height:40px;" data-alias="bdimg"> <p class="nac_page" style="font-size:12px; color:#000;">1 / 4</p> <div class="nac_thumb_container nac_hidden"> <div class="nac_thumb nac_active nac_hidden" style="width:5px; height:5px; border:1px solid #fe8d04; background-color:#fe8d04;"> </div> <div class="nac_thumb nac_hidden" style="width:5px; height:5px; border:1px solid #fe8d04; background-color:#fe8d04;"> </div> <div class="nac_thumb nac_hidden" style="width:5px; height:5px; border:1px solid #fe8d04; background-color:#fe8d04;"> </div> <div class="nac_thumb nac_hidden" style="width:5px; height:5px; border:1px solid #fe8d04; background-color:#fe8d04;"> </div> </div> </div> <div class="nac_button_container nac_next nac_vert nac_enabled nac_hidden"> <div class="nac_ll_button nac_hidden" style="width:20px; height:20px;"> <span class="nac_next_normal" style="position: absolute; background-image: url(./nep_image/nac_ll_next.png);"> </span> <span class="nac_next_hover nac_hover" style="position: absolute; background-image: url(./nep_image/nac_ll_next_hover.png);"> </span> </div> </div> </div> </div>
 ```
+
+
+## 3. 컨테이너
+[컨테이너 설명: 컨테이너 레이어 안에는 나모오서에서 지원하는 다양한 위젯을 구성할 수 있다. 글상자, 이미지, 오디오, 비디오, 문제 템플릿, 레이아웃 템플릿을 삽입하여 레이아웃을 쉽게 구성할 수 있다.]
+
+
+### 3.1. 임의 위치
+[임의 위치 설명: 편집자가 원하는 위치에 위젯 템플릿 등을 배치 구성할 수 있다.]
+
+
+#### 3.1.1. 임의 위치
+```html
+<div class="nac_container nac_container_free" data-alias="container" style="width: 400px; height: 300px; position: absolute; left: 100px; top: 250px; z-index: 1;"> </div>
+```
+
+
+### 3.2. 가로 컨테이너
+[가로 컨테이너 설명: 컨테이너 레이어 안에 위젯 템플릿 개체를 가로로 구성할 수 있다.]
+
+
+#### 3.2.1. 가로 (왼쪽)
+```html
+<div class="nac_container nac_flexrow_wrap nac_jc_start nac_ai_center nac_ac_around" data-alias="container" data-item-margin="5" style="width: 400px; height: 300px; position: absolute; left: 100px; top: 250px; z-index: 2;">
+```
+
+
+#### 3.2.2. 가로 (가운데)
+```html
+<div class="nac_container nac_flexrow_wrap nac_jc_center nac_ai_center nac_ac_around" data-alias="container" data-item-margin="5" style="width: 400px; height: 300px; position: absolute; left: 100px; top: 250px; z-index: 3;"> </div>
+```
+
+
+#### 3.2.3. 가로 (오른쪽)
+```html
+<div class="nac_container nac_flexrow_wrap nac_jc_end nac_ai_center nac_ac_around" data-alias="container" data-item-margin="5" style="width: 400px; height: 300px; position: absolute; left: 100px; top: 250px; z-index: 4;"> </div>
+```
+
+
+#### 3.2.4. 가로 (좌우 맞춤)
+```html
+<div class="nac_container nac_flexrow_wrap nac_jc_between nac_ai_center nac_ac_around" data-alias="container" data-item-margin="5" style="width: 400px; height: 300px; position: absolute; left: 100px; top: 250px; z-index: 5;"> </div>
+```
+
+
+### 3.3. 세로 컨테이너
+[세로 컨테이너 설명: 컨테이너 레이어 안에 위젯 템플릿 개체를 세로로 구성할 수 있다.]
+
+
+#### 3.3.1. 세로 (위)
+```html
+<div class="nac_container nac_flexcol_wrap nac_jc_start nac_ai_center nac_ac_around" data-alias="container" data-item-margin="5" style="width: 400px; height: 300px; position: absolute; left: 100px; top: 250px; z-index: 6;"> </div>
+```
+
+
+#### 3.3.2. 세로 (중간)
+```html
+<div class="nac_container nac_flexcol_wrap nac_jc_center nac_ai_center nac_ac_around" data-alias="container" data-item-margin="5" style="width: 400px; height: 300px; position: absolute; left: 100px; top: 250px; z-index: 7;"> </div>
+```
+
+
+#### 3.3.3. 세로 (아래)
+```html
+<div class="nac_container nac_flexcol_wrap nac_jc_end nac_ai_center nac_ac_around" data-alias="container" data-item-margin="5" style="width: 400px; height: 300px; position: absolute; left: 100px; top: 250px; z-index: 8;"> </div>
+```
+
+
+#### 3.3.4. 세로 (상하 맞춤)
+```html
+<div class="nac_container nac_flexcol_wrap nac_jc_between nac_ai_center nac_ac_around" data-alias="container" data-item-margin="5" style="width: 400px; height: 300px; position: absolute; left: 100px; top: 250px; z-index: 9;"> </div>
+```
+
+
+## 4. 이미지
+[이미지 설명: 내장형, 기본형(캡션 감추기 포함), 하단 설명형, 상단 설명형, 오른쪽 설명형, 왼쪽 설명형, 임의 위치 설명형 그림 템플릿을 삽입할 수 있습니다.]
+
+
+### 4.1. 내장형
+
+
+### 4.1.1. 내장형
+```html
+<img src="./nep_image/untitled3.png" style="width: 400px; height: 244px; position: absolute; left: 23px; top: 8px; z-index: 1;" />
+```
+
+
+### 4.2. 기본형
+#### 4.2.1. 기본형
+```html
+<div class="nac_image" style="margin: auto; width: 400px; position: absolute; left: 150px; top: 488px; z-index: 2;" data-resource="image/res/" data-alias="bdimg"> <figure class="nac_hidden"> <img class="nac_target nac_only_select" src="./nep_image/untitled4.png" data-remove="false" /> <figcaption class="nac_only_resize pubtree_resize_only_y" data-remove="false"> <p><span style="font-weight:bold;"><span style="color:#EB5E00;">그림</span> </span></p> </figcaption> </figure> </div>
+```
+
+
+#### 4.2.2. 기본형 (캡션 감추기)
+```html
+<div class="nac_image" style="margin: auto; width: 400px; position: absolute; left: 32px; top: 540px; z-index: 3;" data-resource="image/res/" data-alias="bdimg"> <figure class="nac_hidden"> <img class="nac_target nac_only_select" src="./nep_image/untitled5.png" data-remove="false" /> <figcaption class="nac_only_resize pubtree_resize_only_y" data-remove="false" hidden="hidden"> <p><span style="font-weight:bold;"><span style="color:#EB5E00;">그림</span> </span></p> </figcaption> </figure> </div>
+```
+
+
+#### 4.2.3. 하단 설명형
+```html
+<div class="nac_image" style="margin: auto; width: 400px; position: absolute; left: 178px; top: 32px; z-index: 4;" data-resource="image/res/" data-alias="bdimg"> <figure class="nac_hidden"> <img class="nac_target nac_only_select" src="./nep_image/untitled6.png" data-remove="false" /> <div class="nac_description nac_only_resize pubtree_resize_only_y"> <p></p> </div> <figcaption class="nac_only_resize pubtree_resize_only_y" data-remove="false"> <p><span style="font-weight:bold;"><span style="color:#EB5E00;">그림</span> </span></p> </figcaption> </figure> </div>
+```
+
+
+#### 4.2.4. 상단 설명형
+```html
+<div class="nac_image" style="margin: auto; width: 400px; position: absolute; left: 183px; top: 275px; z-index: 5;" data-resource="image/res/" data-alias="bdimg"> <figure class="nac_hidden"> <div class="nac_description nac_only_resize pubtree_resize_only_y"> <p></p> </div> <img class="nac_target nac_only_select" src="./nep_image/untitled7.png" data-remove="false" /> <figcaption class="nac_only_resize pubtree_resize_only_y" data-remove="false"> <p><span style="font-weight:bold;"><span style="color:#EB5E00;">그림</span> </span></p> </figcaption> </figure> </div>
+```
