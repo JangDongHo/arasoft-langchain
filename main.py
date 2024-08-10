@@ -97,6 +97,8 @@ example_script = """한국의 역사
 현대 문화
 한국은 K-팝, 드라마, 영화 등 현대 문화에서도 큰 영향력을 발휘하고 있습니다. BTS, 블랙핑크와 같은 K-팝 그룹은 전 세계적으로 많은 팬을 보유하고 있으며, 한국 드라마와 영화는 글로벌 시장에서 큰 인기를 얻고 있습니다."""
 
+example_style_guide = "중요하다고 생각되는 부분 빨간 글씨로 하이라이트 해줘"
+
 def select_llm_model(model_name: str):
     if model_name == "Gemini-1.5-pro-latest(무료)":
         return ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0)
@@ -108,7 +110,7 @@ def main():
         st.subheader("전자책 원고 입력")
         epub_script = st.text_area("원고", value=example_script, height=500, label_visibility="collapsed")
         st.subheader("스타일 가이드")
-        style_guide = st.text_area("스타일 가이드", value="", height=100, label_visibility="collapsed")
+        style_guide = st.text_area("스타일 가이드", value=example_style_guide, height=100, label_visibility="collapsed")
         st.subheader("LLM 모델 선택")
         models = ["GPT-4o mini(유료)", "Gemini-1.5-pro-latest(무료)"]
         select_model = st.sidebar.selectbox("", models, index=0, label_visibility="collapsed")
