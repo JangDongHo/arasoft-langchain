@@ -1,11 +1,10 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
-from langchain_text_splitters import CharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_community.document_loaders import TextLoader
 from langchain import LLMChain
-from lxml import etree
 import streamlit as st
 from dotenv import load_dotenv
 load_dotenv()
@@ -13,6 +12,9 @@ load_dotenv()
 # 위젯 db 열기
 loader = TextLoader("dataset/epub_widgets.txt")
 docs = loader.load()
+
+# 채팅 기록
+store = {}
 
 head = """
 <?xml version="1.0" encoding="utf-8"?>
@@ -32,7 +34,7 @@ head = """
 
 layout_prompt = """
 For the given e-pub script, generate the xhtml layout using the given widgets.
-The size of individual widget elements should be arranged to match the basic size of the page (580px*780px).
+The size of individual widget elements, defined by left, top, width, and height, should be adjusted to match the page size of 580px by 780px.
 You must refer to the following e-book format and output only the appropriate body value.
 Content included in the e-book must never be created or modified and do not use <br> tag.
 
@@ -95,18 +97,6 @@ example_script = """한국의 역사
 현대 문화
 한국은 K-팝, 드라마, 영화 등 현대 문화에서도 큰 영향력을 발휘하고 있습니다. BTS, 블랙핑크와 같은 K-팝 그룹은 전 세계적으로 많은 팬을 보유하고 있으며, 한국 드라마와 영화는 글로벌 시장에서 큰 인기를 얻고 있습니다."""
 
-def validate_xhtml(xhtml_content: str) -> bool:
-    try:
-        # XHTML 파서 생성
-        parser = etree.XMLParser(dtd_validation=True)
-        
-        # XHTML 문서 파싱 및 무결성 검사
-        etree.fromstring(xhtml_content, parser)
-        
-        return True
-    except etree.XMLSyntaxError as e:
-        return False
-
 def select_llm_model(model_name: str):
     if model_name == "Gemini-1.5-pro-latest(무료)":
         return ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0)
@@ -114,9 +104,7 @@ def select_llm_model(model_name: str):
         return ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 def main():
-    pages = []
     with st.sidebar:
-        choice = st.sidebar.selectbox('생성된 페이지', pages)
         st.subheader("전자책 원고 입력")
         epub_script = st.text_area("원고", value=example_script, height=500, label_visibility="collapsed")
         st.subheader("스타일 가이드")
@@ -128,29 +116,36 @@ def main():
 
     if button:
         if epub_script:
-            input = {"head": head, "epub_script": epub_script, "epub_widgets": docs, "style_guide": style_guide}
             # 1. 문서 구조 분석 및 변환
             with st.spinner('1. 문서 구조 분석 및 변환 중...'):
-                text_splitter = CharacterTextSplitter(
-                    separator="\n",
-                    chunk_size=1000,
+                text_splitter = RecursiveCharacterTextSplitter(
+                    chunk_size=500,
                     chunk_overlap=100,
                     length_function = len,
+                    is_separator_regex=False,
                 )
                 sections = text_splitter.split_text(epub_script)
             with st.spinner("2. 레이아웃 배치..."):
                 llm = select_llm_model(select_model)
                 prompt = PromptTemplate.from_template(layout_prompt)
                 chain = LLMChain(llm=llm,prompt=prompt,output_parser=StrOutputParser())
-                results = [chain.run({
-                    "head": head,
-                    "epub_script": section,
-                    "epub_widgets": docs,
-                    "style_guide": style_guide
-                }) for section in sections]
+                results = []
+                for section in sections:
+                    print(section + "\n\n\n")
+                    result = chain.run(
+                        {
+                            "head": head,
+                            "epub_script": section,
+                            "style_guide": style_guide,
+                            "epub_widgets": docs,
+                        }
+                    )
+                    results.append(result)
             with st.expander("사용된 프롬프트"):
                 st.write(chain)
-            for (i, body) in enumerate(results):
+            # 탭 생성
+            tabs = st.tabs([f"페이지 {i+1}" for i in range(len(results))])
+            for i, (tab, body) in enumerate(zip(tabs, results)):
                 output_xhtml = f"""
                 {head}
                 <body style="margin: 0px; padding: 10px; width: 580px; height: 780px;">
@@ -158,8 +153,9 @@ def main():
                 </body>
                 </html>
                 """.replace('\n', '').replace('\n', '').replace("```html", "").replace("```xhtml","").replace("```xml","").replace("```","")
-                with st.expander(f"페이지 {i+1}"):
+                with tab:
                     st.code(output_xhtml, language='html')
+                    st.write(output_xhtml, unsafe_allow_html=True)
                 
         else:
             st.warning("원고를 입력하세요.")
