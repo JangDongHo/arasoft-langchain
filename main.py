@@ -17,8 +17,6 @@ load_dotenv()
 loader = TextLoader("dataset/epub_widgets.txt")
 docs = loader.load()
 
-store = {}
-
 prompt = ChatPromptTemplate(
     [
         (
@@ -116,12 +114,12 @@ def select_llm_model(model_name: str, temperature: int, top_p: int):
     elif model_name == "GPT-4o mini(유료)":
         return ChatOpenAI(model="gpt-4o-mini", temperature=temperature, top_p=top_p)
 
-def get_session_history(session_ids: str) -> BaseChatMessageHistory:
-    if session_ids not in store:
-        store[session_ids] = InMemoryHistory()
-    return store[session_ids]
-
 def main():
+    def get_session_history(session_ids: str) -> BaseChatMessageHistory:
+        if session_ids not in store:
+            store[session_ids] = InMemoryHistory()
+        return store[session_ids]
+    
     with st.sidebar:
         with st.expander("전자책 원고 입력"):
             epub_script = st.text_area("원고", value=example_script, height=500, label_visibility="collapsed")
@@ -137,6 +135,10 @@ def main():
 
     if button:
         if epub_script:
+            store = {}
+            history = get_session_history("abc123")
+            history.clear()
+            history.add_message(AIMessage(content=docs[0].page_content))
             # 1. 문서 구조 분석 및 변환
             with st.spinner('1. 문서 구조 분석 및 변환 중...'):
                 text_splitter = RecursiveCharacterTextSplitter(
@@ -171,6 +173,9 @@ def main():
                     results.append(result)
             with st.expander("사용된 프롬프트"):
                 st.write(chain)
+            with st.expander("과거 대화 내용"):
+                for message in history.messages:
+                    st.write(message.content)
             # 탭 생성
             tabs = st.tabs([f"페이지 {i+1}" for i in range(len(results))])
             for i, (tab, body) in enumerate(zip(tabs, results)):
@@ -188,6 +193,4 @@ def main():
         
 
 if __name__ == "__main__":
-    history = get_session_history("abc123")
-    history.add_message(AIMessage(content=docs[0].page_content))
     main()
