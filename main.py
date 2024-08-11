@@ -1,10 +1,14 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.output_parsers import StrOutputParser
 from langchain_community.document_loaders import TextLoader
-from langchain import LLMChain
+from langchain_core.messages import BaseMessage, AIMessage
+from langchain_core.pydantic_v1 import BaseModel, Field
+from typing import List
 import streamlit as st
 from dotenv import load_dotenv
 load_dotenv()
@@ -13,52 +17,48 @@ load_dotenv()
 loader = TextLoader("dataset/epub_widgets.txt")
 docs = loader.load()
 
-# 채팅 기록
 store = {}
 
-head = """
-<?xml version="1.0" encoding="utf-8"?>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
-<head>
-<title></title>
-<meta http-equiv="default-style" content="application/xhtml+xml; charset=utf-8" />
-<meta name="viewport" content="width=600, height=800" />
-<link href="./nep_css/namo_default.css" rel="stylesheet" type="text/css" />
-<script type="text/javascript" src="./nep_js/jquery.min.js"></script>
-<script type="text/javascript" src="./nep_js/na_editing.js"></script>
-<script type="text/javascript" src="./nep_js/namo_default.js"></script>
-<script type="text/javascript" src="./nep_js/pubtree_diagram_template.js"></script>
-<script type="text/javascript" src="./nep_js/pubtree_animation_template.js"></script>
-</head>
-"""
+prompt = ChatPromptTemplate(
+    [
+        (
+            "system",
+            """
+            For the given e-pub script, generate the xhtml layout using the given widgets.
+            The size of individual widget elements, defined by left, top, width, and height, should be adjusted to match the page size of 580px by 780px.
+            You must refer to the following e-book format and style guide.
+            Content included in the e-book must never be created or modified and do not use <br> tag.
 
-layout_prompt = """
-For the given e-pub script, generate the xhtml layout using the given widgets.
-The size of individual widget elements, defined by left, top, width, and height, should be adjusted to match the page size of 580px by 780px.
-You must refer to the following e-book format and output only the appropriate body value.
-Content included in the e-book must never be created or modified and do not use <br> tag.
+            Parameters:
+                - epub_script: The script for the e-pub book.
+                - style_guide: The style guide for the e-pub book.
 
-Format:
-    {head}
-    <body style="margin: 0px; padding: 10px; width: 580px; height: 780px;">
-    </body>
+            Returns:
+                - epub_xhtml: The xhtml layout for the e-pub book.
 
-Parameters:
-    - epub_script: The script for the e-pub book.
-    - style_guide: The style guide for the e-pub book.
-
-Returns:
-    - epub_xhtml: The xhtml layout for the e-pub book. (only the body value)
-
-Epub_script:
-    {epub_script}
-
-Epub_widgets:
-    {epub_widgets}
-
-Style_guide:
-    {style_guide}
-"""
+            Format:
+                <?xml version="1.0" encoding="utf-8"?>
+                <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+                <head>
+                <title></title>
+                <meta http-equiv="default-style" content="application/xhtml+xml; charset=utf-8" />
+                <meta name="viewport" content="width=600, height=800" />
+                <link href="./nep_css/namo_default.css" rel="stylesheet" type="text/css" />
+                <script type="text/javascript" src="./nep_js/jquery.min.js"></script>
+                <script type="text/javascript" src="./nep_js/na_editing.js"></script>
+                <script type="text/javascript" src="./nep_js/namo_default.js"></script>
+                <script type="text/javascript" src="./nep_js/pubtree_diagram_template.js"></script>
+                <script type="text/javascript" src="./nep_js/pubtree_animation_template.js"></script>
+                </head>
+                <body style="margin: 0px; padding: 10px; width: 580px; height: 780px;">
+                </body>
+                </html>
+            """
+        ),
+        MessagesPlaceholder(variable_name="history"),
+        ("human", "#Epub_script:{epub_script}\n#Style_guide:{style_guide}"),
+    ]
+)
 
 example_script = """한국의 역사
 
@@ -97,7 +97,18 @@ example_script = """한국의 역사
 현대 문화
 한국은 K-팝, 드라마, 영화 등 현대 문화에서도 큰 영향력을 발휘하고 있습니다. BTS, 블랙핑크와 같은 K-팝 그룹은 전 세계적으로 많은 팬을 보유하고 있으며, 한국 드라마와 영화는 글로벌 시장에서 큰 인기를 얻고 있습니다."""
 
-example_style_guide = "대제목과 소제목 폰트 크기를 크게 해줘."
+class InMemoryHistory(BaseChatMessageHistory, BaseModel):
+    """In memory implementation of chat message history."""
+
+    messages: List[BaseMessage] = Field(default_factory=list)
+
+    def add_messages(self, messages: List[BaseMessage]) -> None:
+        """Add a list of messages to the store"""
+        self.messages.extend(messages)
+
+    def clear(self) -> None:
+        self.messages = []
+
 
 def select_llm_model(model_name: str, temperature: int, top_p: int):
     if model_name == "Gemini-1.5-pro-latest(무료)":
@@ -105,12 +116,17 @@ def select_llm_model(model_name: str, temperature: int, top_p: int):
     elif model_name == "GPT-4o mini(유료)":
         return ChatOpenAI(model="gpt-4o-mini", temperature=temperature, top_p=top_p)
 
+def get_session_history(session_ids: str) -> BaseChatMessageHistory:
+    if session_ids not in store:
+        store[session_ids] = InMemoryHistory()
+    return store[session_ids]
+
 def main():
     with st.sidebar:
         with st.expander("전자책 원고 입력"):
             epub_script = st.text_area("원고", value=example_script, height=500, label_visibility="collapsed")
         with st.expander("스타일 가이드 입력"):
-            style_guide = st.text_area("스타일 가이드", value=example_style_guide, height=100, label_visibility="collapsed")
+            style_guide = st.text_area("스타일 가이드", value="대제목과 소제목 폰트 크기를 크게 해줘.", height=100, label_visibility="collapsed")
         st.subheader("LLM 모델 선택")
         models = ["GPT-4o mini(유료)", "Gemini-1.5-pro-latest(무료)"]
         select_model = st.sidebar.selectbox("", models, index=0, label_visibility="collapsed")
@@ -132,17 +148,24 @@ def main():
                 sections = text_splitter.split_text(epub_script)
             with st.spinner("2. 레이아웃 배치..."):
                 llm = select_llm_model(select_model, temperature, top_p)
-                prompt = PromptTemplate.from_template(layout_prompt)
-                chain = LLMChain(llm=llm,prompt=prompt,output_parser=StrOutputParser())
+                chain = prompt | llm | StrOutputParser()
                 results = []
                 for section in sections:
-                    print(section + "\n\n\n")
-                    result = chain.run(
+                    chain_with_history = RunnableWithMessageHistory(
+                        chain,
+                        get_session_history,
+                        input_messages_key="epub_script",
+                        history_messages_key="history",
+                    )
+                    result = chain_with_history.invoke(
                         {
-                            "head": head,
                             "epub_script": section,
-                            "style_guide": style_guide,
-                            "epub_widgets": docs,
+                            "style_guide": style_guide
+                        },
+                        config={
+                            "configurable": {
+                                "session_id": "abc123"
+                            }
                         }
                     )
                     results.append(result)
@@ -151,16 +174,10 @@ def main():
             # 탭 생성
             tabs = st.tabs([f"페이지 {i+1}" for i in range(len(results))])
             for i, (tab, body) in enumerate(zip(tabs, results)):
-                output_xhtml = f"""
-                {head}
-                <body style="margin: 0px; padding: 10px; width: 580px; height: 780px;">
-                {body}
-                </body>
-                </html>
-                """.replace('\n', '').replace('\n', '').replace("```html", "").replace("```xhtml","").replace("```xml","").replace("```","")
+                body = body.replace('\n', '').replace('\n', '').replace("```html", "").replace("```xhtml","").replace("```xml","").replace("```","")
                 with tab:
-                    st.code(output_xhtml, language='html')
-                    st.write(output_xhtml, unsafe_allow_html=True)
+                    st.code(body, language='html')
+                    st.write(body, unsafe_allow_html=True)
                 
         else:
             st.warning("원고를 입력하세요.")
@@ -171,4 +188,6 @@ def main():
         
 
 if __name__ == "__main__":
+    history = get_session_history("abc123")
+    history.add_message(AIMessage(content=docs[0].page_content))
     main()
