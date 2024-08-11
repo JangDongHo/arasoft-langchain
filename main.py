@@ -97,23 +97,26 @@ example_script = """한국의 역사
 현대 문화
 한국은 K-팝, 드라마, 영화 등 현대 문화에서도 큰 영향력을 발휘하고 있습니다. BTS, 블랙핑크와 같은 K-팝 그룹은 전 세계적으로 많은 팬을 보유하고 있으며, 한국 드라마와 영화는 글로벌 시장에서 큰 인기를 얻고 있습니다."""
 
-example_style_guide = "중요하다고 생각되는 부분 빨간 글씨로 하이라이트 해줘"
+example_style_guide = "대제목과 소제목 폰트 크기를 크게 해줘."
 
-def select_llm_model(model_name: str):
+def select_llm_model(model_name: str, temperature: int, top_p: int):
     if model_name == "Gemini-1.5-pro-latest(무료)":
-        return ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0)
+        return ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=temperature, top_p=top_p)
     elif model_name == "GPT-4o mini(유료)":
-        return ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        return ChatOpenAI(model="gpt-4o-mini", temperature=temperature, top_p=top_p)
 
 def main():
     with st.sidebar:
-        st.subheader("전자책 원고 입력")
-        epub_script = st.text_area("원고", value=example_script, height=500, label_visibility="collapsed")
-        st.subheader("스타일 가이드")
-        style_guide = st.text_area("스타일 가이드", value=example_style_guide, height=100, label_visibility="collapsed")
+        with st.expander("전자책 원고 입력"):
+            epub_script = st.text_area("원고", value=example_script, height=500, label_visibility="collapsed")
+        with st.expander("스타일 가이드 입력"):
+            style_guide = st.text_area("스타일 가이드", value=example_style_guide, height=100, label_visibility="collapsed")
         st.subheader("LLM 모델 선택")
         models = ["GPT-4o mini(유료)", "Gemini-1.5-pro-latest(무료)"]
         select_model = st.sidebar.selectbox("", models, index=0, label_visibility="collapsed")
+        chunk_size = st.text_input("chunk_size", value=600, help="원고를 분할할 크기입니다.")
+        temperature = st.slider('temperature', min_value=0.0, max_value=1.0, value=0.0, step=0.01, help="0.0이면 가장 확실한 답변을, 1.0이면 가장 다양한 답변을 생성합니다.")
+        top_p = st.slider('top_p', min_value=0.0, max_value=1.0, value=1.0, step=0.01, help="0.0이면 가장 확실한 답변을, 1.0이면 가장 다양한 답변을 생성합니다.")
         button = st.button("변환")
 
     if button:
@@ -121,14 +124,14 @@ def main():
             # 1. 문서 구조 분석 및 변환
             with st.spinner('1. 문서 구조 분석 및 변환 중...'):
                 text_splitter = RecursiveCharacterTextSplitter(
-                    chunk_size=500,
-                    chunk_overlap=100,
+                    chunk_size=int(chunk_size),
+                    chunk_overlap=50,
                     length_function = len,
                     is_separator_regex=False,
                 )
                 sections = text_splitter.split_text(epub_script)
             with st.spinner("2. 레이아웃 배치..."):
-                llm = select_llm_model(select_model)
+                llm = select_llm_model(select_model, temperature, top_p)
                 prompt = PromptTemplate.from_template(layout_prompt)
                 chain = LLMChain(llm=llm,prompt=prompt,output_parser=StrOutputParser())
                 results = []
