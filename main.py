@@ -24,7 +24,7 @@ prompt = ChatPromptTemplate(
         (
             "system",
             """
-            For the given e-pub script, generate the xhtml layout using the given widgets.
+            For the given e-pub script, generate the xhtml layout only using the given widgets docs.
             The size of individual widget elements, defined by left, top, width, and height, should be adjusted to match the page size of 580px by 780px.
             You must refer to the following e-book format and style guide.
             Content included in the e-book must never be created or modified and do not use <br> tag.
