@@ -1,0 +1,12 @@
+services:
+  streamlit:
+    build: .
+    restart: always
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+    environment:
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    command: streamlit run main.py --server.runOnSave true
