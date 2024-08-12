@@ -118,13 +118,14 @@ def main():
     def get_session_history(session_ids: str) -> BaseChatMessageHistory:
         if session_ids not in store:
             store[session_ids] = InMemoryHistory()
+        print(len(store[session_ids].messages))
         return store[session_ids]
     
     with st.sidebar:
         with st.expander("전자책 원고 입력"):
             epub_script = st.text_area("원고", value=example_script, height=500, label_visibility="collapsed")
         with st.expander("스타일 가이드 입력"):
-            style_guide = st.text_area("스타일 가이드", value="대제목과 소제목 폰트 크기를 크게 해줘.", height=100, label_visibility="collapsed")
+            style_guide = st.text_area("스타일 가이드", value="", height=100, label_visibility="collapsed")
         st.subheader("LLM 모델 선택")
         models = ["GPT-4o mini(유료)", "Gemini-1.5-pro-latest(무료)"]
         select_model = st.sidebar.selectbox("", models, index=0, label_visibility="collapsed")
@@ -170,6 +171,7 @@ def main():
                             }
                         }
                     )
+                    st.expander(f"페이지 {len(results)+1}").code(result, language='html')
                     results.append(result)
             with st.expander("사용된 프롬프트"):
                 st.write(chain)
