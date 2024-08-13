@@ -65,12 +65,12 @@ rag_chain = (
 # 단계 8: 체인 실행(Run Chain)
 # 문서에 대한 질의를 입력하고, 답변을 출력합니다.
 question = """
-다음 위젯들의 이름과 xhtml 코드를 빠짐없이 가져오세요.
-위젯 카테고리 안에 여러 가지 위젯이 있는 경우 제일 상위 카테고리의 위젯만 가져오세요.
-코드가 포함되어 있지 않다고 생각되는 경우 '코드 없음'이라고 작성해주세요.
+Please bring the names, descriptions, and xhtml code of the widgets related to the following sentence. 
 
-찾고자 하는 위젯 카테고리:
-    글상자(가운데 맞춤), 그림
+Widget descriptions may or may not be present.
+
+sentence:
+    글상자와 그림으로 레이아웃을 구성해주세요.
 
 The output should be formatted as a JSON instance that conforms to the JSON schema below.
 
@@ -83,6 +83,9 @@ Here is the output schema:
             "items": {
                 "properties": {
                     "name": {
+                        "type": "string"
+                    },
+                    "description": {
                         "type": "string"
                     },
                     "code": {
@@ -102,7 +105,4 @@ Here is the output schema:
 response = rag_chain.invoke(question)
 
 # 결과 출력
-print(f"문서의 수: {len(docs)}")
-print("===" * 20)
-print(f"[HUMAN]\n{question}\n")
-print(f"[AI]\n{response}")
+print(response)
