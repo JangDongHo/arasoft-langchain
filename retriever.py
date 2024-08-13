@@ -1,6 +1,8 @@
 from langchain import hub
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_text_splitters import RecursiveCharacterTextSplitter, CharacterTextSplitter, MarkdownHeaderTextSplitter
+from langchain_text_splitters import MarkdownHeaderTextSplitter
+from langchain_core.output_parsers import JsonOutputParser
+from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_community.document_loaders import TextLoader
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
@@ -48,12 +50,11 @@ prompt = hub.pull("rlm/rag-prompt")
 # 모델(LLM) 을 생성합니다.
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0)
 
+# 단계 7: 체인 생성(Create Chain)
 def format_docs(docs):
     # 검색한 문서 결과를 하나의 문단으로 합쳐줍니다.
-    print(docs)
     return "\n\n".join(doc.page_content for doc in docs)
 
-# 단계 7: 체인 생성(Create Chain)
 rag_chain = (
     {"context": retriever | format_docs, "question": RunnablePassthrough()}
     | prompt
@@ -68,7 +69,35 @@ question = """
 위젯 카테고리 안에 여러 가지 위젯이 있는 경우 제일 상위 카테고리의 위젯만 가져오세요.
 코드가 포함되어 있지 않다고 생각되는 경우 '코드 없음'이라고 작성해주세요.
 
-- 글상자(가운데 맞춤), 그림
+찾고자 하는 위젯 카테고리:
+    글상자(가운데 맞춤), 그림
+
+The output should be formatted as a JSON instance that conforms to the JSON schema below.
+
+Here is the output schema:
+```
+{
+    "properties": {
+        "widgets": {
+            "type": "array",
+            "items": {
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name",
+                    "code"
+                ]
+            }
+        }
+    }
+}
+```
 """
 response = rag_chain.invoke(question)
 
