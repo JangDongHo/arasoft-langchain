@@ -166,3 +166,5 @@ wget==3.2
 wrapt==1.16.0
 yarl==1.9.4
 zipp==3.19.2
+faiss_gpu==1.7.2
+langchainhub==0.1.21

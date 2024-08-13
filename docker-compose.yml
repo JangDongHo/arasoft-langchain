@@ -9,4 +9,8 @@ services:
     environment:
       GOOGLE_API_KEY: ${GOOGLE_API_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      LANGCHAIN_TRACING_V2: false
+      LANGCHAIN_ENDPOINT: https://api.smith.langchain.com
+      LANGCHAIN_API_KEY: ${LANGCHAIN_API_KEY}
+      LANGCHAIN_PROJECT: "아라소프트"
     command: streamlit run main.py --server.runOnSave true
