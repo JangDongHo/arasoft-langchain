@@ -1,8 +1,5 @@
 from langchain import hub
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_text_splitters import MarkdownHeaderTextSplitter
-from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_community.document_loaders import TextLoader
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
@@ -48,34 +45,16 @@ prompt = hub.pull("rlm/rag-prompt")
 
 # 단계 6: 언어모델 생성(Create LLM)
 # 모델(LLM) 을 생성합니다.
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0)
 
 # 단계 7: 체인 생성(Create Chain)
 def format_docs(docs):
     # 검색한 문서 결과를 하나의 문단으로 합쳐줍니다.
     return "\n\n".join(doc.page_content for doc in docs)
 
-rag_chain = (
-    {"context": retriever | format_docs, "question": RunnablePassthrough()}
-    | prompt
-    | llm
-    | StrOutputParser()
-)
-
 # 단계 8: 체인 실행(Run Chain)
 # 문서에 대한 질의를 입력하고, 답변을 출력합니다.
-question = """
-Please bring the names, descriptions, and xhtml code of the widgets related to the following sentence. 
-
-Widget descriptions may or may not be present.
-
-sentence:
-    글상자와 그림으로 레이아웃을 구성해주세요.
-
-The output should be formatted as a JSON instance that conforms to the JSON schema below.
-
-Here is the output schema:
-```
+# JSON 스키마 정의
+json_schema = """
 {
     "properties": {
         "widgets": {
@@ -100,9 +79,32 @@ Here is the output schema:
         }
     }
 }
+"""
+
+# 템플릿 질문 정의
+question_template = """
+Please bring the names, descriptions, and xhtml code of the widgets related to the following sentence.
+If you have multiple widgets, bring them all.
+
+Widget descriptions may or may not be present.
+
+sentence:
+    {style_guide}
+
+The output should be formatted as a JSON instance that conforms to the JSON schema below.
+
+Here is the output schema:
+```
+{json_schema}
 ```
 """
-response = rag_chain.invoke(question)
 
-# 결과 출력
-print(response)
+def find_widgets(llm, style_guide: str):
+    question = question_template.format(style_guide=style_guide, json_schema=json_schema)
+    rag_chain = (
+        {"context": retriever | format_docs, "question": RunnablePassthrough()}
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
+    return rag_chain.invoke(question)

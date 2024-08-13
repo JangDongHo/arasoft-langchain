@@ -5,17 +5,13 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.output_parsers import StrOutputParser
-from langchain_community.document_loaders import TextLoader
 from langchain_core.messages import BaseMessage, AIMessage
 from langchain_core.pydantic_v1 import BaseModel, Field
+from retriever import find_widgets
 from typing import List
 import streamlit as st
 from dotenv import load_dotenv
 load_dotenv()
-
-# 위젯 db 열기
-loader = TextLoader("dataset/epub_widgets.txt")
-docs = loader.load()
 
 prompt = ChatPromptTemplate(
     [
@@ -139,7 +135,6 @@ def main():
             store = {}
             history = get_session_history("abc123")
             history.clear()
-            history.add_message(AIMessage(content=docs[0].page_content))
             # 1. 문서 구조 분석 및 변환
             with st.spinner('1. 문서 구조 분석 및 변환 중...'):
                 text_splitter = RecursiveCharacterTextSplitter(
@@ -149,8 +144,14 @@ def main():
                     is_separator_regex=False,
                 )
                 sections = text_splitter.split_text(epub_script)
-            with st.spinner("2. 레이아웃 배치..."):
+            with st.spinner('2. 기술 문서 로드 중...'):
                 llm = select_llm_model(select_model, temperature, top_p)
+                if style_guide:
+                    response = find_widgets(llm, style_guide)
+                else:
+                    response = find_widgets(llm, "글상자 위젯들을 이용해서 레이아웃을 구성해주세요.")
+                history.add_message(AIMessage(content=response))
+            with st.spinner("3. 레이아웃 배치..."):
                 chain = prompt | llm | StrOutputParser()
                 results = []
                 for section in sections:
