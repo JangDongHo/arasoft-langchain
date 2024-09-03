@@ -12,7 +12,7 @@ load_dotenv()
 logging.langsmith("아라소프트")
 
 # 단계 1: 문서 로드(Load Documents)
-loader = TextLoader("dataset/epub_widgets.txt")
+loader = TextLoader("./dataset/epub_widgets.txt", encoding="utf-8")
 docs = loader.load()
 
 # 단계 2: 문서 분할(Split Documents)

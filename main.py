@@ -14,15 +14,17 @@ import streamlit as st
 from dotenv import load_dotenv
 load_dotenv()
 
-loader = TextLoader('example_script.txt')
+loader = TextLoader('example_script.txt', encoding="utf-8")
 data = loader.load()
 example_script = data[0].page_content
 
-prompt = ChatPromptTemplate(
+generate_prompt = ChatPromptTemplate(
     [
         (
             "system",
             """
+            You are an expert in creating eBook layouts based on the ePub 3.0 standard.
+
             For the given e-pub script, generate the xhtml layout only using the given widgets docs.
             The size of individual widget elements, defined by left, top, width, and height, should be adjusted to match the page size of 580px by 780px.
             You must refer to the following e-book format and style guide.
@@ -56,6 +58,24 @@ prompt = ChatPromptTemplate(
         ),
         MessagesPlaceholder(variable_name="history"),
         ("human", "#Epub_script:{epub_script}\n#Style_guide:{style_guide}"),
+    ]
+)
+
+validate_prompt = ChatPromptTemplate(
+    [
+        (
+            "system",
+            """
+            You are an expert in validating eBook layouts based on the ePub 3.0 standard.
+
+            For the given e-pub xhtml layout, validate the layout using the given widgets docs.
+            What you need to look carefully at is to check whether the elements of each widget do not exceed the default page size of 580px * 780px.
+
+            If you believe the eBook layout XHTML is not properly generated, output "yes." If you believe it is properly generated, output "no."
+            """
+        ),
+        MessagesPlaceholder(variable_name="history"),
+        ("human", "#Epub_xhtml:{epub_xhtml}\n#Style_guide:{style_guide}"),
     ]
 )
 
@@ -117,9 +137,10 @@ def main():
                 response = find_widgets(llm, style_guide)
                 history.add_message(AIMessage(content=response))
             with st.spinner("3. 레이아웃 배치..."):
-                chain = prompt | llm | StrOutputParser()
+                chain = generate_prompt | llm | StrOutputParser()
                 results = []
                 for section in sections:
+                    # 생성
                     chain_with_history = RunnableWithMessageHistory(
                         chain,
                         get_session_history,
@@ -137,6 +158,8 @@ def main():
                             }
                         }
                     )
+                    # 평가
+                    
                     st.expander(f"페이지 {len(results)+1}").code(result, language='html')
                     results.append(result)
             with st.expander("사용된 프롬프트"):
