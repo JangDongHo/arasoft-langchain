@@ -44,7 +44,7 @@ vectorstore = FAISS.from_documents(documents=widget_doc + epub_docs2, embedding=
 
 # 단계 4: 검색(Search)
 # 기술 문서에 포함되어 있는 정보를 검색하고 생성합니다.
-retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 6, "fetch_k": 40})
+retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 4, "fetch_k": 10})
 
 # 단계 5: 프롬프트 생성(Create Prompt)
 # 프롬프트를 생성합니다.
