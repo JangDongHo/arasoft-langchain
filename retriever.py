@@ -28,16 +28,23 @@ headers_to_split_on = [  # 문서를 분할할 헤더 레벨과 해당 레벨의
 ]
 markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
 # markdown_document를 헤더를 기준으로 분할하여 md_header_splits에 저장합니다.
-splits = markdown_splitter.split_text(docs[0].page_content)
+widget_doc = markdown_splitter.split_text(docs[0].page_content)
+
+loader = TextLoader("./dataset/test.xhtml", encoding="utf-8")
+epub_docs1 = loader.load()
+loader = TextLoader("./dataset/test2.xhtml", encoding="utf-8")
+epub_docs2 = loader.load()
+loader = TextLoader("./dataset/test3.xhtml", encoding="utf-8")
+epub_docs3 = loader.load()
 
 # 단계 3: 임베딩 & 벡터스토어 생성(Create Vectorstore)
 # 벡터스토어를 생성합니다.
 embedding_model = GoogleGenerativeAIEmbeddings(model='models/embedding-001')
-vectorstore = FAISS.from_documents(documents=splits, embedding=embedding_model)
+vectorstore = FAISS.from_documents(documents=widget_doc + epub_docs2, embedding=embedding_model)
 
 # 단계 4: 검색(Search)
 # 기술 문서에 포함되어 있는 정보를 검색하고 생성합니다.
-retriever = vectorstore.as_retriever()
+retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 6, "fetch_k": 40})
 
 # 단계 5: 프롬프트 생성(Create Prompt)
 # 프롬프트를 생성합니다.
@@ -67,13 +74,20 @@ json_schema = """
                     "description": {
                         "type": "string"
                     },
-                    "code": {
-                        "type": "string"
+                    "example_codes": {
+                        "type": "array"
+                        "items": {
+                            "properties": {
+                                "example_code": {
+                                    "type": "string"
+                                }
+                            }
+                        }
                     }
                 },
                 "required": [
                     "name",
-                    "code"
+                    "example_codes"
                 ]
             }
         }
@@ -92,6 +106,8 @@ sentence:
     {style_guide}
 
 The output should be formatted as a JSON instance that conforms to the JSON schema below.
+Include as much example_code as possible.
+
 
 Here is the output schema:
 ```
