@@ -116,7 +116,7 @@ def main():
             with st.spinner('2. 기술 문서 로드 중...'):
                 llm = select_llm_model(select_model, temperature, top_p)
                 style_guide = "글상자 위젯들을 불러와주세요. 그리고, " + style_guide
-                response = find_widgets(llm, style_guide)
+                response = find_widgets(llm, epub_script, style_guide)
                 history.add_message(AIMessage(content=response))
             with st.spinner("3. 레이아웃 배치..."):
                 chain = generate_prompt | llm | StrOutputParser()

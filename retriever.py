@@ -60,11 +60,11 @@ if body:
 # 단계 3: 임베딩 & 벡터스토어 생성(Create Vectorstore)
 # 벡터스토어를 생성합니다.
 embedding_model = GoogleGenerativeAIEmbeddings(model='models/embedding-001')
-vectorstore = FAISS.from_documents(documents=widget_doc+epub_doc, embedding=embedding_model)
+vectorstore = FAISS.from_documents(documents=epub_doc, embedding=embedding_model)
 
 # 단계 4: 검색(Search)
 # 기술 문서에 포함되어 있는 정보를 검색하고 생성합니다.
-retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 6, "fetch_k": 40})
+retriever = vectorstore.as_retriever()
 
 # 단계 5: 프롬프트 생성(Create Prompt)
 # 프롬프트를 생성합니다.
@@ -96,12 +96,19 @@ json_schema = """
                         "type": "string"
                     },
                     "example_codes": {
-                        "type": "array"
+                        "type": "array",
+                        "description": "You need to get as much code related to the widget as possible.",
                         "items": {
+                            "type": "object",
                             "properties": {
                                 "example_code": {
-                                    "type": "string"
-                            }
+                                    "type": "string",
+                                    "description": "The XHTML code including all child elements."
+                                },
+                            },
+                            "required": [
+                                "example_code"
+                            ]
                         }
                     }
                 },
@@ -115,15 +122,18 @@ json_schema = """
 }
 """
 
+
 # 템플릿 질문 정의
 question_template = """
 Please bring the names, descriptions, and xhtml code of the widgets related to the following sentence.
 
-sentence:
-    {style_guide}
+Epub_Script:
+{epub_script}
+
+Sententce:
+{style_guide}
 
 The output should be formatted as a JSON instance that conforms to the JSON schema below.
-
 
 Here is the output schema:
 ```
@@ -131,8 +141,8 @@ Here is the output schema:
 ```
 """
 
-def find_widgets(llm, style_guide: str):
-    question = question_template.format(style_guide=style_guide, json_schema=json_schema)
+def find_widgets(llm, epub_script:str, style_guide: str):
+    question = question_template.format(epub_script=epub_script, style_guide=style_guide, json_schema=json_schema)
     rag_chain = (
         {"context": retriever | format_docs, "question": RunnablePassthrough()}
         | prompt
