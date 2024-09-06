@@ -34,33 +34,36 @@ markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_sp
 widget_doc = markdown_splitter.split_text(docs[0].page_content)
 
 
-loader = TextLoader("./dataset/test2.xhtml", encoding="utf-8")
-docs = loader.load()
-
-# Create a BeautifulSoup object with recursive=False
-soup = BeautifulSoup(docs[0].page_content, 'html.parser')
-body = soup.find('body')
 epub_doc = []
+file_names = ['test', 'test2', 'test3']
 
-if body:
-    for idx, element in enumerate(body.find_all(recursive=False)):
-        metadata = {
-            'element_type': element.name,
-            'attributes': element.attrs,
-            'id': element.get('id', ''),
-            'class': element.get('class', []),
-            'text_content': element.get_text(strip=True),
-            'parent_element': element.find_parent().name if element.find_parent() else None,
-            'position': idx,
-            'document_location': f'document_{idx}'
-        }
-        epub_doc.append(Document(metadata=metadata, page_content=str(element)))
+for file_name in file_names:
+    loader = TextLoader(f"./dataset/{file_name}.xhtml", encoding="utf-8")
+    docs = loader.load()
+
+    # Create a BeautifulSoup object with recursive=False
+    soup = BeautifulSoup(docs[0].page_content, 'html.parser')
+    body = soup.find('body')
+
+    if body:
+        for idx, element in enumerate(body.find_all(recursive=False)):
+            metadata = {
+                'element_type': element.name,
+                'attributes': element.attrs,
+                'id': element.get('id', ''),
+                'class': element.get('class', []),
+                'text_content': element.get_text(strip=True),
+                'parent_element': element.find_parent().name if element.find_parent() else None,
+                'position': idx,
+                'document_location': f'document_{idx}'
+            }
+            epub_doc.append(Document(metadata=metadata, page_content=str(element)))
 
 
 # 단계 3: 임베딩 & 벡터스토어 생성(Create Vectorstore)
 # 벡터스토어를 생성합니다.
 embedding_model = GoogleGenerativeAIEmbeddings(model='models/embedding-001')
-vectorstore = FAISS.from_documents(documents=epub_doc, embedding=embedding_model)
+vectorstore = FAISS.from_documents(documents=widget_doc+epub_doc, embedding=embedding_model)
 
 # 단계 4: 검색(Search)
 # 기술 문서에 포함되어 있는 정보를 검색하고 생성합니다.
@@ -89,31 +92,22 @@ json_schema = """
             "type": "array",
             "items": {
                 "properties": {
-                    "name": {
+                    "widget_name": {
                         "type": "string"
                     },
-                    "description": {
+                    "widget_description": {
                         "type": "string"
                     },
                     "example_codes": {
                         "type": "array",
-                        "description": "You need to get as much code related to the widget as possible.",
                         "items": {
-                            "type": "object",
-                            "properties": {
-                                "example_code": {
-                                    "type": "string",
-                                    "description": "The XHTML code including all child elements."
-                                },
-                            },
-                            "required": [
-                                "example_code"
-                            ]
+                            "type": "string"
                         }
-                    }
+                    },
                 },
                 "required": [
-                    "name",
+                    "widget_name",
+                    "widget_description",
                     "example_codes"
                 ]
             }
