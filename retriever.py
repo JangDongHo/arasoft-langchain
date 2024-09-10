@@ -9,6 +9,7 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_teddynote import logging
 from bs4 import BeautifulSoup
 from io import StringIO
+import os
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -23,23 +24,28 @@ headers_to_split_on = [  # 문서를 분할할 헤더 레벨과 해당 레벨의
     (
         "#",
         "Header 1",
-    ),  # 헤더 레벨 1은 '#'로 표시되며, 'Header 1'이라는 이름을 가집니다.
+    ),  
     (
         "##",
         "Header 2",
-    ),  # 헤더 레벨 2는 '##'로 표시되며, 'Header 2'라는 이름을 가집니다.
+    )
 ]
 markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
 # markdown_document를 헤더를 기준으로 분할하여 md_header_splits에 저장합니다.
 widget_doc = markdown_splitter.split_text(docs[0].page_content)
 
-
-epub_doc = []
-file_names = ['test', 'test2', 'test3']
-
-for file_name in file_names:
-    loader = TextLoader(f"./dataset/{file_name}.xhtml", encoding="utf-8")
-    docs = loader.load()
+for number in range(1, 62):
+    formatted_number = f"{number:03}"
+    file_path = f"./dataset/2023년_지역특화산업_이야기/page{formatted_number}.xhtml"
+    if os.path.exists(file_path):
+        try:
+            loader = TextLoader(file_path, encoding="utf-8")
+            docs = loader.load()
+            # Process your docs here
+        except Exception as e:
+            # Handle other possible exceptions if needed
+            print(f"An error occurred while loading {file_path}: {e}")
+    epub_doc = []
 
     # Create a BeautifulSoup object with recursive=False
     soup = BeautifulSoup(docs[0].page_content, 'html.parser')
@@ -100,8 +106,10 @@ json_schema = """
                     },
                     "example_codes": {
                         "type": "array",
+                        "description": "Get as much example_codes as possible.",
                         "items": {
                             "type": "string"
+                            "description": "xhtml code"
                         }
                     },
                 },
@@ -119,7 +127,7 @@ json_schema = """
 
 # 템플릿 질문 정의
 question_template = """
-Please bring the names, descriptions, and xhtml code of the widgets related to the following sentence.
+Please bring the names, descriptions, and xhtml code of the widgets that 
 
 Epub_Script:
 {epub_script}
