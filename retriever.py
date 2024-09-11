@@ -38,11 +38,13 @@ widget_doc = markdown_splitter.split_text(docs[0].page_content)
 # 단계 3: 임베딩 & 벡터스토어 생성(Create Vectorstore)
 # 벡터스토어를 생성합니다.
 embedding_model = GoogleGenerativeAIEmbeddings(model='models/embedding-001')
-vectorstore = FAISS.from_documents(documents=widget_doc+epub_docs, embedding=embedding_model)
+vectorstore = FAISS.from_documents(documents=epub_docs, embedding=embedding_model)
 
 # 단계 4: 검색(Search)
 # 기술 문서에 포함되어 있는 정보를 검색하고 생성합니다.
-retriever = vectorstore.as_retriever()
+retriever = vectorstore.as_retriever(
+    search_type="mmr", search_kwargs={"k": 1, "fetch_k": 10, "lambda_mult": 0.6}
+)
 
 # 단계 5: 프롬프트 생성(Create Prompt)
 # 프롬프트를 생성합니다.
