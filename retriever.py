@@ -10,6 +10,7 @@ from langchain_teddynote import logging
 from bs4 import BeautifulSoup
 from io import StringIO
 import os
+from get_epub_docs import epub_docs
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -34,42 +35,10 @@ markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_sp
 # markdown_document를 헤더를 기준으로 분할하여 md_header_splits에 저장합니다.
 widget_doc = markdown_splitter.split_text(docs[0].page_content)
 
-for number in range(1, 62):
-    formatted_number = f"{number:03}"
-    file_path = f"./dataset/2023년_지역특화산업_이야기/page{formatted_number}.xhtml"
-    if os.path.exists(file_path):
-        try:
-            loader = TextLoader(file_path, encoding="utf-8")
-            docs = loader.load()
-            # Process your docs here
-        except Exception as e:
-            # Handle other possible exceptions if needed
-            print(f"An error occurred while loading {file_path}: {e}")
-    epub_doc = []
-
-    # Create a BeautifulSoup object with recursive=False
-    soup = BeautifulSoup(docs[0].page_content, 'html.parser')
-    body = soup.find('body')
-
-    if body:
-        for idx, element in enumerate(body.find_all(recursive=False)):
-            metadata = {
-                'element_type': element.name,
-                'attributes': element.attrs,
-                'id': element.get('id', ''),
-                'class': element.get('class', []),
-                'text_content': element.get_text(strip=True),
-                'parent_element': element.find_parent().name if element.find_parent() else None,
-                'position': idx,
-                'document_location': f'document_{idx}'
-            }
-            epub_doc.append(Document(metadata=metadata, page_content=str(element)))
-
-
 # 단계 3: 임베딩 & 벡터스토어 생성(Create Vectorstore)
 # 벡터스토어를 생성합니다.
 embedding_model = GoogleGenerativeAIEmbeddings(model='models/embedding-001')
-vectorstore = FAISS.from_documents(documents=widget_doc+epub_doc, embedding=embedding_model)
+vectorstore = FAISS.from_documents(documents=widget_doc+epub_docs, embedding=embedding_model)
 
 # 단계 4: 검색(Search)
 # 기술 문서에 포함되어 있는 정보를 검색하고 생성합니다.
