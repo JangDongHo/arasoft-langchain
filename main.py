@@ -18,19 +18,6 @@ loader = TextLoader('./scripts/example_script.txt', encoding="utf-8")
 data = loader.load()
 example_script = data[0].page_content
 
-generate_prompt = ChatPromptTemplate(
-    [
-        (
-            "system",
-            """
-            The title of the e-book you need to create is '한국의 역사', and the category is '역사'. The content of the manuscript that will be included on the page is as follows. Print it as HTML code.
-            """
-        ),
-        MessagesPlaceholder(variable_name="history"),
-        ("human", "#Epub_script:{epub_script}\n#Style_guide:{style_guide}"),
-    ]
-)
-
 class InMemoryHistory(BaseChatMessageHistory, BaseModel):
     """In memory implementation of chat message history."""
 
@@ -50,7 +37,7 @@ def select_llm_model(model_name: str, temperature: int, top_p: int):
     elif model_name == "GPT-4o mini(유료)":
         return ChatOpenAI(model="gpt-4o-mini", temperature=temperature, top_p=top_p)
     elif model_name == "Fine-tuning GPT-4o-mini(유료)":
-        return ChatOpenAI(model="ft:gpt-4o-mini-2024-07-18:personal:arasoft-layout:AAu2m2Yh", temperature=temperature, top_p=top_p)
+        return ChatOpenAI(model="ft:gpt-4o-mini-2024-07-18:personal::AAwY9LoJ", temperature=temperature, top_p=top_p)
 
 def main():
     def get_session_history(session_ids: str) -> BaseChatMessageHistory:
@@ -59,6 +46,9 @@ def main():
         return store[session_ids]
     
     with st.sidebar:
+        book_name = st.text_input("책 제목", value="한국의 역사")
+        category = st.text_input("카테고리-대분류", value="역사")
+        sub_category = st.text_input("카테고리-중분류", value="한국사")
         with st.expander("전자책 원고 입력"):
             epub_script = st.text_area("원고", value=example_script, height=500, label_visibility="collapsed")
         with st.expander("스타일 가이드 입력"):
@@ -87,6 +77,18 @@ def main():
                 sections = text_splitter.split_text(epub_script)
             with st.spinner("2. 레이아웃 배치..."):
                 llm = select_llm_model(select_model, temperature, top_p)
+                generate_prompt = ChatPromptTemplate(
+                    [
+                        (
+                            "system",
+                            f"""
+                            The title of the e-book you need to create is f{book_name}, and the category is f{category}-f{sub_category}. The content of the manuscript that will be included on the page is as follows. However, when creating a layout, do not include the <img> tag and print it out.
+                            """
+                        ),
+                        MessagesPlaceholder(variable_name="history"),
+                        ("human", "#Epub_script:{epub_script}\n#Style_guide:{style_guide}"),
+                    ]
+                )
                 chain = generate_prompt | llm | StrOutputParser()
                 results = []
                 for section in sections:
