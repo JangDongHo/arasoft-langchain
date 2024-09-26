@@ -7,6 +7,7 @@ from niteru.utils import is_html
 def jaccard_similarity(classes1: List[str], classes2: List[str]) -> float:
     set1 = set(classes1)
     set2 = set(classes2)
+    print(set1, set2)
     intersection = len(set1 & set2)
 
     if len(set1) == 0 and len(set2) == 0:
