@@ -1,1 +1,1 @@
-row['원고_텍스트']
+cleaned_text
