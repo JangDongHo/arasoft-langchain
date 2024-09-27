@@ -8,7 +8,6 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import BaseMessage, AIMessage
 from langchain_core.pydantic_v1 import BaseModel, Field
-from retriever import find_widgets
 from typing import List
 import streamlit as st
 from dotenv import load_dotenv
