@@ -8,6 +8,8 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import BaseMessage, AIMessage
 from langchain_core.pydantic_v1 import BaseModel, Field
+from transformers import AutoTokenizer
+from transformers import pipeline
 from typing import List
 import streamlit as st
 from dotenv import load_dotenv
@@ -37,6 +39,15 @@ def select_llm_model(model_name: str, temperature: int, top_p: int):
         return ChatOpenAI(model="gpt-4o-mini", temperature=temperature, top_p=top_p)
     elif model_name == "Fine-tuning GPT-4o-mini(유료)":
         return ChatOpenAI(model="ft:gpt-4o-mini-2024-07-18:personal::AAwY9LoJ", temperature=temperature, top_p=top_p)
+    elif model_name == "Arasoft-Llama-3.1-Korean-8B-Instruct(무료)":
+        model = "dongho18/Arasoft-Llama-3.1-Korean-8B-Instruct"
+        tokenizer = AutoTokenizer.from_pretrained(model)
+
+        pipe = pipeline(
+            "text-generation", model=model, tokenizer=tokenizer, max_length=2048, temperature=temperature, top_p=top_p
+        )
+
+        return HuggingFacePipeline(pipeline=pipe)
 
 def main():
     def get_session_history(session_ids: str) -> BaseChatMessageHistory:
@@ -53,7 +64,7 @@ def main():
         with st.expander("스타일 가이드 입력"):
             style_guide = st.text_area("스타일 가이드", value="", height=100, label_visibility="collapsed")
         st.subheader("LLM 모델 선택")
-        models = ["Fine-tuning GPT-4o-mini(유료)", "GPT-4o mini(유료)", "Gemini-1.5-pro-latest(무료)"]
+        models = ["Arasoft-Llama-3.1-Korean-8B-Instruct(무료)", "Fine-tuning GPT-4o-mini(유료)", "GPT-4o mini(유료)", "Gemini-1.5-pro-latest(무료)"]
         select_model = st.sidebar.selectbox("", models, index=0, label_visibility="collapsed")
         chunk_size = st.text_input("chunk_size", value=600, help="원고를 분할할 크기입니다.")
         temperature = st.slider('temperature', min_value=0.0, max_value=1.0, value=0.0, step=0.01, help="0.0이면 가장 확실한 답변을, 1.0이면 가장 다양한 답변을 생성합니다.")
