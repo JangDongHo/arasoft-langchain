@@ -8,8 +8,7 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import BaseMessage, AIMessage
 from langchain_core.pydantic_v1 import BaseModel, Field
-from transformers import AutoTokenizer
-from transformers import pipeline
+from langchain_community.chat_models import ChatOllama
 from typing import List
 import streamlit as st
 from dotenv import load_dotenv
@@ -40,14 +39,62 @@ def select_llm_model(model_name: str, temperature: int, top_p: int):
     elif model_name == "Fine-tuning GPT-4o-mini(유료)":
         return ChatOpenAI(model="ft:gpt-4o-mini-2024-07-18:personal::AAwY9LoJ", temperature=temperature, top_p=top_p)
     elif model_name == "Arasoft-Llama-3.1-Korean-8B-Instruct(무료)":
-        model = "dongho18/Arasoft-Llama-3.1-Korean-8B-Instruct"
-        tokenizer = AutoTokenizer.from_pretrained(model)
+        return ChatOllama(model="arasoft-llama-3.1:latest", temperature=temperature, top_p=top_p)
 
-        pipe = pipeline(
-            "text-generation", model=model, tokenizer=tokenizer, max_length=2048, temperature=temperature, top_p=top_p
+def openAI_layout_generator(llm, book_name, category, sub_category, sections, style_guide, get_session_history):
+    results = []
+    generate_prompt = ChatPromptTemplate(
+        [
+            (
+                "system",
+                f"""
+                The title of the e-book you need to create is f{book_name}, and the category is f{category}-f{sub_category}. The content of the manuscript that will be included on the page is as follows.
+                """
+            ),
+            MessagesPlaceholder(variable_name="history"),
+            ("human", "#Epub_script:{epub_script}\n#Style_guide:{style_guide}"),
+        ]
+    )
+    chain = generate_prompt | llm | StrOutputParser()
+    for section in sections:
+        # 생성
+        chain_with_history = RunnableWithMessageHistory(
+            chain,
+            get_session_history,
+            input_messages_key="epub_script",
+            history_messages_key="history",
         )
+        result = chain_with_history.invoke(
+            {
+                "epub_script": section,
+                "style_guide": style_guide
+            },
+            config={
+                "configurable": {
+                    "session_id": "abc123"
+                }
+            }
+        )
+        # 평가     
+        st.expander(f"페이지 {len(results)+1}").code(result, language='html')
+        results.append(result)
+    return results
 
-        return HuggingFacePipeline(pipeline=pipe)
+def llama_layout_generator(llm, book_name, category, sub_category, sections, style_guide):
+    results = []
+
+    alpaca_prompt = ChatPromptTemplate(
+        [
+            (
+                "system",
+                f"""
+                The title of the e-book you need to create is f{book_name}, and the category is f{category}-f{sub_category}. The content of the manuscript that will be included on the page is as follows.
+                """
+            ),
+            MessagesPlaceholder(variable_name="history"),
+            ("human", "#Epub_script:{epub_script}\n#Style_guide:{style_guide}"),
+        ]
+    )
 
 def main():
     def get_session_history(session_ids: str) -> BaseChatMessageHistory:
@@ -87,45 +134,11 @@ def main():
                 sections = text_splitter.split_text(epub_script)
             with st.spinner("2. 레이아웃 배치..."):
                 llm = select_llm_model(select_model, temperature, top_p)
-                generate_prompt = ChatPromptTemplate(
-                    [
-                        (
-                            "system",
-                            f"""
-                            The title of the e-book you need to create is f{book_name}, and the category is f{category}-f{sub_category}. The content of the manuscript that will be included on the page is as follows. However, when creating a layout, do not include the <img> tag and print it out.
-                            """
-                        ),
-                        MessagesPlaceholder(variable_name="history"),
-                        ("human", "#Epub_script:{epub_script}\n#Style_guide:{style_guide}"),
-                    ]
-                )
-                chain = generate_prompt | llm | StrOutputParser()
-                results = []
-                for section in sections:
-                    # 생성
-                    chain_with_history = RunnableWithMessageHistory(
-                        chain,
-                        get_session_history,
-                        input_messages_key="epub_script",
-                        history_messages_key="history",
-                    )
-                    result = chain_with_history.invoke(
-                        {
-                            "epub_script": section,
-                            "style_guide": style_guide
-                        },
-                        config={
-                            "configurable": {
-                                "session_id": "abc123"
-                            }
-                        }
-                    )
-                    # 평가
+                if select_model == "Arasoft-Llama-3.1-Korean-8B-Instruct(무료)":
+                    results = llama_layout_generator(llm, book_name, category, sub_category, sections, style_guide)
+                else:
+                    results = openAI_layout_generator(llm, book_name, category, sub_category, sections, style_guide, get_session_history)
                     
-                    st.expander(f"페이지 {len(results)+1}").code(result, language='html')
-                    results.append(result)
-            with st.expander("사용된 프롬프트"):
-                st.write(chain)
             with st.expander("과거 대화 내용"):
                 for message in history.messages:
                     st.write(message.content)
