@@ -1,14 +1,13 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder, PromptTemplate
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_community.document_loaders import TextLoader
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.messages import BaseMessage, AIMessage
-from langchain_core.pydantic_v1 import BaseModel, Field
-from langchain_community.chat_models import ChatOllama
+from langchain_core.messages import BaseMessage
+from pydantic import BaseModel, Field
+from langchain_community.llms.ollama import Ollama
 from typing import List
 import streamlit as st
 from dotenv import load_dotenv
@@ -32,14 +31,10 @@ class InMemoryHistory(BaseChatMessageHistory, BaseModel):
 
 
 def select_llm_model(model_name: str, temperature: int, top_p: int):
-    if model_name == "Gemini-1.5-pro-latest(무료)":
-        return ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=temperature, top_p=top_p)
-    elif model_name == "GPT-4o mini(유료)":
-        return ChatOpenAI(model="gpt-4o-mini", temperature=temperature, top_p=top_p)
-    elif model_name == "Fine-tuning GPT-4o-mini(유료)":
+    if model_name == "Fine-tuning GPT-4o-mini(유료)":
         return ChatOpenAI(model="ft:gpt-4o-mini-2024-07-18:personal::AAwY9LoJ", temperature=temperature, top_p=top_p)
-    elif model_name == "Arasoft-Llama-3.1-Korean-8B-Instruct(무료)":
-        return ChatOllama(model="arasoft-llama-3.1:latest", temperature=temperature, top_p=top_p)
+    elif model_name == "dongho18/Arasoft-Llama-3.2-1B-Instruct(무료)":
+        return Ollama(model="Arasoft-Llama-3.2-1B-Instruct.gguf:latest", temperature=temperature, top_p=top_p, num_gpu=2)
 
 def openAI_layout_generator(llm, book_name, category, sub_category, sections, style_guide, get_session_history):
     results = []
@@ -80,21 +75,36 @@ def openAI_layout_generator(llm, book_name, category, sub_category, sections, st
         results.append(result)
     return results
 
-def llama_layout_generator(llm, book_name, category, sub_category, sections, style_guide):
+def llama_layout_generator(llm, book_name, category, sub_category, sections):
+    print(llm)
     results = []
 
-    alpaca_prompt = ChatPromptTemplate(
-        [
-            (
-                "system",
-                f"""
-                The title of the e-book you need to create is f{book_name}, and the category is f{category}-f{sub_category}. The content of the manuscript that will be included on the page is as follows.
-                """
-            ),
-            MessagesPlaceholder(variable_name="history"),
-            ("human", "#Epub_script:{epub_script}\n#Style_guide:{style_guide}"),
-        ]
-    )
+    # PromptTemplate 정의
+    template = """
+    <|begin_of_text|><|start_header_id|>user<|end_header_id|>
+    Book Title: {title}
+    Category: {category}
+    Subcategory: {subcategory}
+
+    Text: {text}
+
+    <|start_header_id|>assistant<|end_header_id|>"""
+    generate_prompt = PromptTemplate.from_template(template)  # 수정된 부분
+
+    # 각 섹션에 대해 프롬프트 생성 및 모델 호출
+    chain = generate_prompt | llm | StrOutputParser()
+    for section in sections:
+        result = chain.invoke(
+            {
+                "book_name": book_name,
+                "category": category,
+                "sub_category": sub_category,
+                "text": section
+            }
+        )
+        results.append(result)
+
+    return results
 
 def main():
     def get_session_history(session_ids: str) -> BaseChatMessageHistory:
@@ -111,16 +121,17 @@ def main():
         with st.expander("스타일 가이드 입력"):
             style_guide = st.text_area("스타일 가이드", value="", height=100, label_visibility="collapsed")
         st.subheader("LLM 모델 선택")
-        models = ["Arasoft-Llama-3.1-Korean-8B-Instruct(무료)", "Fine-tuning GPT-4o-mini(유료)", "GPT-4o mini(유료)", "Gemini-1.5-pro-latest(무료)"]
+        models = ["dongho18/Arasoft-Llama-3.2-1B-Instruct(무료)", "Fine-tuning GPT-4o-mini(유료)", "GPT-4o mini(유료)", "Gemini-1.5-pro-latest(무료)"]
         select_model = st.sidebar.selectbox("", models, index=0, label_visibility="collapsed")
         chunk_size = st.text_input("chunk_size", value=600, help="원고를 분할할 크기입니다.")
-        temperature = st.slider('temperature', min_value=0.0, max_value=1.0, value=0.0, step=0.01, help="0.0이면 가장 확실한 답변을, 1.0이면 가장 다양한 답변을 생성합니다.")
-        top_p = st.slider('top_p', min_value=0.0, max_value=1.0, value=1.0, step=0.01, help="0.0이면 가장 확실한 답변을, 1.0이면 가장 다양한 답변을 생성합니다.")
+        temperature = st.slider('temperature', min_value=0.1, max_value=1.0, value=0.1, step=0.01, help="0.0이면 가장 확실한 답변을, 1.0이면 가장 다양한 답변을 생성합니다.")
+        top_p = st.slider('top_p', min_value=0.0, max_value=0.9, value=0.9, step=0.01, help="0.0이면 가장 확실한 답변을, 1.0이면 가장 다양한 답변을 생성합니다.")
         button = st.button("변환")
 
     if button:
         if epub_script:
             store = {}
+            results = []
             history = get_session_history("abc123")
             history.clear()
             # 1. 문서 구조 분석 및 변환
@@ -134,8 +145,8 @@ def main():
                 sections = text_splitter.split_text(epub_script)
             with st.spinner("2. 레이아웃 배치..."):
                 llm = select_llm_model(select_model, temperature, top_p)
-                if select_model == "Arasoft-Llama-3.1-Korean-8B-Instruct(무료)":
-                    results = llama_layout_generator(llm, book_name, category, sub_category, sections, style_guide)
+                if select_model == "dongho18/Arasoft-Llama-3.2-1B-Instruct(무료)":
+                    results = llama_layout_generator(llm, book_name, category, sub_category, sections)
                 else:
                     results = openAI_layout_generator(llm, book_name, category, sub_category, sections, style_guide, get_session_history)
                     
