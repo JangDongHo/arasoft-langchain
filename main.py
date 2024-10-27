@@ -7,11 +7,14 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.messages import BaseMessage
 from pydantic import BaseModel, Field
-from langchain_community.llms.ollama import Ollama
+from langchain.llms import HuggingFacePipeline
 from typing import List
+import torch
 import streamlit as st
 from dotenv import load_dotenv
+import os
 load_dotenv()
+import torch
 
 loader = TextLoader('./scripts/example_script.txt', encoding="utf-8")
 data = loader.load()
@@ -34,7 +37,15 @@ def select_llm_model(model_name: str, temperature: int, top_p: int):
     if model_name == "Fine-tuning GPT-4o-mini(유료)":
         return ChatOpenAI(model="ft:gpt-4o-mini-2024-07-18:personal::AAwY9LoJ", temperature=temperature, top_p=top_p)
     elif model_name == "dongho18/Arasoft-Llama-3.2-1B-Instruct(무료)":
-        return Ollama(model="Arasoft-Llama-3.2-1B-Instruct.gguf:latest", temperature=temperature, top_p=top_p, num_gpu=2)
+        model_id = "dongho18/Arasoft-Llama-3.2-1B-Instruct"
+        os.environ["TRANSFORMERS_CACHE"] = "./cache/"
+        os.environ["HF_HOME"] = "./cache/"
+        return HuggingFacePipeline.from_model_id(
+            model_id=model_id,
+            task="text-generation",
+            device=0,
+            pipeline_kwargs={"temperature": temperature, "top_p": top_p},
+        )
 
 def openAI_layout_generator(llm, book_name, category, sub_category, sections, style_guide, get_session_history):
     results = []
@@ -76,19 +87,16 @@ def openAI_layout_generator(llm, book_name, category, sub_category, sections, st
     return results
 
 def llama_layout_generator(llm, book_name, category, sub_category, sections):
-    print(llm)
     results = []
 
     # PromptTemplate 정의
     template = """
-    <|begin_of_text|><|start_header_id|>user<|end_header_id|>
     Book Title: {title}
     Category: {category}
     Subcategory: {subcategory}
 
     Text: {text}
-
-    <|start_header_id|>assistant<|end_header_id|>"""
+    """
     generate_prompt = PromptTemplate.from_template(template)  # 수정된 부분
 
     # 각 섹션에 대해 프롬프트 생성 및 모델 호출
@@ -96,9 +104,9 @@ def llama_layout_generator(llm, book_name, category, sub_category, sections):
     for section in sections:
         result = chain.invoke(
             {
-                "book_name": book_name,
+                "title": book_name,
                 "category": category,
-                "sub_category": sub_category,
+                "subcategory": sub_category,
                 "text": section
             }
         )
